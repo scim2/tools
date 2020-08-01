@@ -12,6 +12,8 @@ var refSchema ReferenceSchema
 
 // displayName and name.givenName can never be empty.
 s.NeverEmpty("displayName", "name.givenName")
+// other fields are empty.
+s.EmptyChance(1)
 
 f := fuzz.New().Funcs(
     NewResourceFuzzer(s), 

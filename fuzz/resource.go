@@ -15,10 +15,20 @@ func NewResourceFuzzer(reference ReferenceSchema) ResourceFuzzer {
 		resource := make(Resource)
 		var fuzzAttribute func(resource map[string]interface{}, attribute *Attribute)
 		fuzzAttribute = func(resource map[string]interface{}, attribute *Attribute) {
+			notEmpty := func() bool {
+				return c.Rand.Float64() <= reference.emptyChance
+			}
+
 			switch attribute.Type {
 			case StringType, ReferenceType:
-				randString := randAlphaString(c.Rand, 10)
-				if attribute.isRequired() {
+				var randString string
+				if len(attribute.CanonicalValues) == 0 {
+					randString = randAlphaString(c.Rand, 10)
+				} else {
+					randString = randStringFromSlice(c.Rand, attribute.CanonicalValues)
+				}
+
+				if attribute.isRequired() || notEmpty() {
 					if attribute.MultiValued {
 						resource[attribute.Name] = []string{
 							randString,
@@ -29,7 +39,7 @@ func NewResourceFuzzer(reference ReferenceSchema) ResourceFuzzer {
 				}
 			case BooleanType:
 				randBool := c.RandBool()
-				if attribute.isRequired() {
+				if attribute.isRequired() || notEmpty() {
 					if attribute.MultiValued {
 						resource[attribute.Name] = []bool{
 							randBool,
@@ -40,7 +50,7 @@ func NewResourceFuzzer(reference ReferenceSchema) ResourceFuzzer {
 				}
 			case BinaryType:
 				randBase64String := base64.StdEncoding.EncodeToString([]byte(randAlphaString(c.Rand, 10)))
-				if attribute.isRequired() {
+				if attribute.isRequired() || notEmpty() {
 					if attribute.MultiValued {
 						resource[attribute.Name] = []string{
 							randBase64String,
@@ -52,7 +62,7 @@ func NewResourceFuzzer(reference ReferenceSchema) ResourceFuzzer {
 			case DecimalType:
 				var randFloat64 float64
 				c.Fuzz(&randFloat64)
-				if attribute.isRequired() {
+				if attribute.isRequired() || notEmpty() {
 					if attribute.MultiValued {
 						resource[attribute.Name] = []float64{
 							randFloat64,
@@ -64,7 +74,7 @@ func NewResourceFuzzer(reference ReferenceSchema) ResourceFuzzer {
 			case IntegerType:
 				var randInt int
 				c.Fuzz(&randInt)
-				if attribute.isRequired() {
+				if attribute.isRequired() || notEmpty() {
 					if attribute.MultiValued {
 						resource[attribute.Name] = []int{
 							randInt,
@@ -75,7 +85,7 @@ func NewResourceFuzzer(reference ReferenceSchema) ResourceFuzzer {
 				}
 			case DateTimeType:
 				randDateTimeString := randDateTime()
-				if attribute.isRequired() {
+				if attribute.isRequired() || notEmpty() {
 					if attribute.MultiValued {
 						resource[attribute.Name] = []string{
 							randDateTimeString,

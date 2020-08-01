@@ -10,6 +10,21 @@ type ReferenceSchema struct {
 	Name        string       `json:"name,omitempty"`
 	Description string       `json:"description,omitempty"`
 	Attributes  []*Attribute `json:"attributes"`
+
+	emptyChance float64
+}
+
+// EmptyChance indices how much chance an optional field has to be empty.
+// i.e. 0.5 indices a 50% chance
+func (schema *ReferenceSchema) EmptyChance(chance float64) {
+	switch {
+	case chance <= 0:
+		schema.emptyChance = 1
+	case 1 <= chance:
+		schema.emptyChance = 0
+	default:
+		schema.emptyChance = 1 - chance
+	}
 }
 
 // NeverEmpty makes sure that all passed attribute names are never empty during fuzzing.

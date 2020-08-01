@@ -20,6 +20,11 @@ func (r *characterRange) choose(rand *rand.Rand) rune {
 	return r.first + rune(rand.Int63n(count))
 }
 
+func randStringFromSlice(r *rand.Rand, strings []string) string {
+	n := r.Intn(len(strings))
+	return strings[n]
+}
+
 func randAlphaString(r *rand.Rand, length int) string {
 	runes := make([]rune, length)
 	for i := range runes {

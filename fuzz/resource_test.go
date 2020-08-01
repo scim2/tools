@@ -2,7 +2,6 @@ package fuzz
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/elimity-com/scim/schema"
@@ -16,6 +15,7 @@ func TestReferenceSchemaNeverEmpty(t *testing.T) {
 
 	// displayName, name.givenName and emails.value can never be empty.
 	s.NeverEmpty("displayName", "name.givenName", "emails.value")
+	s.EmptyChance(1)
 
 	f := fuzz.New().Funcs(
 		NewResourceFuzzer(s),
@@ -24,7 +24,6 @@ func TestReferenceSchemaNeverEmpty(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		var resource Resource
 		f.Fuzz(&resource)
-		fmt.Println(resource)
 
 		if _, ok := resource["userName"]; !ok {
 			t.Errorf("userName not present")
