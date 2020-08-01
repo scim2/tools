@@ -1,0 +1,13 @@
+github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/di-wu/scim-filter-parser v0.0.0-20191024153148-b33ea97ae796/go.mod h1:Q9X8NLzgdqI3Z0XcbiPpdAEql664lC6ExBN7B6ZLhco=
+github.com/di-wu/xsd-datetime v0.0.0-20190813080539-55a8ba70aa69 h1:KlIk21PbvrYUBb2Dv2gsd4VZjYviGgevIadTj9ebExU=
+github.com/di-wu/xsd-datetime v0.0.0-20190813080539-55a8ba70aa69/go.mod h1:i3iEhrP3WchwseOBeIdW/zxeoleXTOzx1WyDXgdmOww=
+github.com/elimity-com/scim v0.0.0-20200618143042-1e032a9c5407 h1:YWlLIjg7hwQZI4wR3FZ0CFHvIWZnWsqlveneweQm0jg=
+github.com/elimity-com/scim v0.0.0-20200618143042-1e032a9c5407/go.mod h1:GydjOQCvO7sOBPOidxkoy+831P3oAk5h078iF8W9vt8=
+github.com/google/gofuzz v1.1.0 h1:Hsa8mG0dQ46ij8Sl2AYJDUv1oA9/d6Vk+3LG99Oe02g=
+github.com/google/gofuzz v1.1.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
+github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
+github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
+github.com/stretchr/testify v1.6.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
+gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
+gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
