@@ -4,37 +4,15 @@ import (
 	"strings"
 )
 
+// Resource represents a fuzzed SCIM resource.
+type Resource map[string]interface{}
+
 // ReferenceSchema represents a resource schema that is used to fuzz resources that are defined by this schema.
 type ReferenceSchema struct {
 	ID          string       `json:"id"`
 	Name        string       `json:"name,omitempty"`
 	Description string       `json:"description,omitempty"`
 	Attributes  []*Attribute `json:"attributes"`
-
-	emptyChance float64
-}
-
-// EmptyChance indices how much chance an optional field has to be empty.
-// i.e. 0.5 indices a 50% chance
-func (schema *ReferenceSchema) EmptyChance(chance float64) {
-	switch {
-	case chance <= 0:
-		schema.emptyChance = 1
-	case 1 <= chance:
-		schema.emptyChance = 0
-	default:
-		schema.emptyChance = 1 - chance
-	}
-}
-
-// NeverEmpty makes sure that all passed attribute names are never empty during fuzzing.
-// i.e. "displayName", "name.givenName" or "emails.value"
-func (schema ReferenceSchema) NeverEmpty(names ...string) {
-	for _, attribute := range schema.Attributes {
-		for _, name := range names {
-			attribute.NeverEmpty(name)
-		}
-	}
 }
 
 // ForEachAttribute calls given function on all attributes recursively.
@@ -62,19 +40,28 @@ type Attribute struct {
 	required bool // manually set for fuzzer (schema.NeverEmpty)
 }
 
-func (attribute *Attribute) isRequired() bool {
-	return attribute.Required || attribute.required
+func (attribute *Attribute) isComplex() bool {
+	return attribute.Type == ComplexType
 }
 
-func (attribute *Attribute) NeverEmpty(name string) {
+func (attribute *Attribute) shouldFill() bool {
+	return attribute.Required || attribute.required || attribute.isComplex()
+}
+
+func (attribute *Attribute) neverEmpty(name string) {
 	n := strings.SplitN(name, ".", 2)
 	if strings.EqualFold(n[0], attribute.Name) {
-		if len(n) > 1 && attribute.Type == ComplexType {
+		if len(n) > 1 && attribute.isComplex() {
 			for _, subAttribute := range attribute.SubAttributes {
-				subAttribute.NeverEmpty(n[1])
+				subAttribute.neverEmpty(n[1])
 			}
 		} else {
 			attribute.required = true
+			if attribute.isComplex() {
+				attribute.ForEachAttribute(func(attribute *Attribute) {
+					attribute.required = true
+				})
+			}
 		}
 	}
 }
@@ -82,7 +69,7 @@ func (attribute *Attribute) NeverEmpty(name string) {
 // ForEachAttribute calls given function on itself all sub attributes recursively.
 func (attribute *Attribute) ForEachAttribute(f func(attribute *Attribute)) {
 	f(attribute)
-	if attribute.Type == ComplexType {
+	if attribute.isComplex() {
 		for _, subAttribute := range attribute.SubAttributes {
 			subAttribute.ForEachAttribute(f)
 		}

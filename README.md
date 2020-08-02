@@ -10,18 +10,16 @@ Build on top of [gofuzz](https://github.com/google/gofuzz/).
 var refSchema ReferenceSchema
 // define the reference schema yourself or use unmarshal json
 
-// displayName and name.givenName can never be empty.
-s.NeverEmpty("displayName", "name.givenName")
-// other fields are empty.
-s.EmptyChance(1)
+resource := New(refSchema).
+    // multi valued fields have one value.
+    NumElements(1, 1).
+    // displayName and name.givenName can never be empty.
+    NeverEmpty("displayName", "name.givenName").
+    // other fields are empty.
+    EmptyChance(1).
+    // create fuzzed resource.
+    Fuzz()
 
-f := fuzz.New().Funcs(
-    NewResourceFuzzer(s), 
-)
-
-var resource Resource
-f.Fuzz(&resource)
-
-// OUTPUT: map[displayName:vWKdUsVprh userName:RFlLpsMnBW]
+// OUTPUT: map[displayName:vWKdUsVprh name:map[givenName:ieVkQrrcKL] userName:RFlLpsMnBW]
 ```
 

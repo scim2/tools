@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/elimity-com/scim/schema"
-	"github.com/google/gofuzz"
 )
 
 func TestReferenceSchemaNeverEmpty(t *testing.T) {
@@ -13,17 +12,13 @@ func TestReferenceSchemaNeverEmpty(t *testing.T) {
 	raw, _ := schema.CoreUserSchema().MarshalJSON()
 	_ = json.Unmarshal(raw, &s)
 
-	// displayName, name.givenName and emails.value can never be empty.
-	s.NeverEmpty("displayName", "name.givenName", "emails.value")
-	s.EmptyChance(1)
-
-	f := fuzz.New().Funcs(
-		NewResourceFuzzer(s),
-	)
+	f := New(s).
+		EmptyChance(1).
+		NumElements(1, 1).
+		NeverEmpty("displayName", "name.givenName", "emails")
 
 	for i := 0; i < 100; i++ {
-		var resource Resource
-		f.Fuzz(&resource)
+		resource := f.Fuzz()
 
 		if _, ok := resource["userName"]; !ok {
 			t.Errorf("userName not present")
@@ -47,17 +42,30 @@ func TestReferenceSchemaNeverEmpty(t *testing.T) {
 		if emailsMap, ok := resource["emails"]; !ok {
 			t.Errorf("emails not present")
 		} else {
-			emails, ok := emailsMap.([]map[string]interface{})
+			emails, ok := emailsMap.([]interface{})
 			if !ok {
-				t.Errorf("email not a complex multi valued attribute")
+				t.Errorf("email not a multi valued attribute")
 			}
 			if len(emails) == 0 {
 				t.Errorf("emails is empty")
 				break
 			}
-			for _, email := range emails {
-				if _, ok := email["value"]; !ok {
-					t.Errorf("email.value is not present")
+			for _, e := range emails {
+				if email, ok := e.(map[string]interface{}); !ok {
+					t.Errorf("emails is not a complex attribute")
+				} else {
+					if _, ok := email["display"]; !ok {
+						t.Errorf("emails.value is not present")
+					}
+					if _, ok := email["primary"]; !ok {
+						t.Errorf("emails.value is not present")
+					}
+					if _, ok := email["type"]; !ok {
+						t.Errorf("emails.value is not present")
+					}
+					if _, ok := email["value"]; !ok {
+						t.Errorf("emails.value is not present")
+					}
 				}
 			}
 		}
