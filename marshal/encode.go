@@ -71,7 +71,12 @@ func newMapEncoder(v reflect.Value) (map[string]interface{}, error) {
 }
 
 func newStructEncoder(v reflect.Value) (map[string]interface{}, error) {
-	resource := make(structs.Resource)
+	var (
+		resource    = make(structs.Resource)
+		mVToAdd     = make(map[string][]interface{})
+		mVMapsToAdd = make(map[string][]map[string]interface{})
+		mapsToAdd   = make(map[string]map[string]interface{})
+	)
 
 	t := v.Type()
 	for i := 0; i < v.NumField(); i++ {
@@ -80,14 +85,103 @@ func newStructEncoder(v reflect.Value) (map[string]interface{}, error) {
 			continue
 		}
 
-		typeField := t.Field(i)
-		tag := typeField.Tag.Get("scim")
-		if tag == "" {
-			tag = lowerFirstRune(typeField.Name)
+		tag := parseTags(t.Field(i))
+		if tag.sub == "" && !tag.multiValued {
+			resource[tag.name] = field.Interface()
+			continue
 		}
+		if tag.sub != "" {
+			if !tag.multiValued {
+				m, ok := mapsToAdd[tag.name]
+				if !ok {
+					mapsToAdd[tag.name] = make(map[string]interface{})
+					m = mapsToAdd[tag.name]
+				}
+				_, ok = m[tag.sub]
+				if ok {
+					return nil, errors.New("already full")
+				}
+				m[tag.sub] = field.Interface()
+			} else {
+				mv, ok := mVMapsToAdd[tag.name]
+				if !ok {
+					mVMapsToAdd[tag.name] = make([]map[string]interface{}, 0)
+					mv = mVMapsToAdd[tag.name]
+				}
 
-		resource[tag] = field.Interface()
+				for _, i := range tag.indexes {
+					for len(mv) < i+1 {
+						mv = append(mv, make(map[string]interface{}))
+					}
+				}
+
+				if len(tag.indexes) == 0 {
+					var added bool
+					for _, m := range mv {
+						_, ok := m[tag.sub]
+						if !ok {
+							m[tag.sub] = field.Interface()
+							added = true
+							break
+						}
+					}
+					if !added {
+						mv = append(mv, map[string]interface{}{
+							tag.sub: field.Interface(),
+						})
+					}
+				} else {
+					for _, i := range tag.indexes {
+						mv[i][tag.sub] = field.Interface()
+					}
+				}
+				mVMapsToAdd[tag.name] = mv
+			}
+			continue
+		}
+		if tag.multiValued {
+			mv, ok := mVToAdd[tag.name]
+			if !ok {
+				mVToAdd[tag.name] = make([]interface{}, 0)
+				mv = mVToAdd[tag.name]
+			}
+
+			for _, i := range tag.indexes {
+				for len(mv) < i+1 {
+					mv = append(mv, nil)
+				}
+			}
+
+			switch field.Kind() {
+			case reflect.Slice:
+				for i := 0; i < field.Len(); i++ {
+					mv = append(mv, field.Index(i).Interface())
+				}
+			default:
+				if len(tag.indexes) == 0 {
+					mv = append(mv, field.Interface())
+				} else {
+					for _, i := range tag.indexes {
+						mv[i] = field.Interface()
+					}
+				}
+			}
+			mVToAdd[tag.name] = mv
+		}
 	}
+
+	for k, v := range mVToAdd {
+		resource[k] = v
+	}
+
+	for k, v := range mVMapsToAdd {
+		resource[k] = v
+	}
+
+	for k, v := range mapsToAdd {
+		resource[k] = v
+	}
+
 	return resource, nil
 }
 

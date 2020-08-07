@@ -1,6 +1,8 @@
 # SCIM Tools
 This repository/module contains various utility functions to make it easier to work with SCIM servers and clients.
 
+**!** most packages are a wip
+
 ## Fuzzer
 Build on top of [gofuzz](https://github.com/google/gofuzz/).
 
