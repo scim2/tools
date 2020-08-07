@@ -4,9 +4,6 @@ import (
 	"strings"
 )
 
-// Resource represents a fuzzed SCIM resource.
-type Resource map[string]interface{}
-
 // ReferenceSchema represents a resource schema that is used to fuzz resources that are defined by this schema.
 type ReferenceSchema struct {
 	ID          string       `json:"id"`

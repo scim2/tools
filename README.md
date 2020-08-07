@@ -4,8 +4,6 @@ This repository/module contains various utility functions to make it easier to w
 ## Fuzzer
 Build on top of [gofuzz](https://github.com/google/gofuzz/).
 
-> **!** the current implementation only fuzzes required fields.
-
 ```go
 var refSchema ReferenceSchema
 // define the reference schema yourself or use unmarshal json
@@ -21,5 +19,24 @@ resource := New(refSchema).
     Fuzz()
 
 // OUTPUT: map[displayName:vWKdUsVprh name:map[givenName:ieVkQrrcKL] userName:RFlLpsMnBW]
+```
+
+# Marshaller
+A simple marshaller that converts structs to maps based on their tags.
+
+> **!** the current implementation does not marshal recursively.
+
+```go
+type ResourceStruct struct {
+	Name string `scim:"userName"`
+}
+
+resourceStruct := ResourceStruct{
+    Name: "di-wu",
+}
+
+resource, _ := Marshal(resourceStruct)
+
+// OUTPUT: map[userName:di-wu]
 ```
 

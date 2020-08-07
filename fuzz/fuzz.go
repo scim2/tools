@@ -3,6 +3,7 @@ package fuzz
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/di-wu/scim-tools/structs"
 	"github.com/google/gofuzz"
 	"math/rand"
 	"time"
@@ -87,15 +88,15 @@ func (f *Fuzzer) shouldFill() bool {
 }
 
 // Fuzz recursively fills a Resource based on fields the ReferenceSchema of the Fuzzer.
-func (f *Fuzzer) Fuzz() Resource {
-	var resource Resource
+func (f *Fuzzer) Fuzz() structs.Resource {
+	var resource structs.Resource
 	f.fuzzer.Funcs(f.newResourceFuzzer()).Fuzz(&resource)
 	return resource
 }
 
-func (f *Fuzzer) newResourceFuzzer() func(resource *Resource, c fuzz.Continue) {
-	return func(r *Resource, c fuzz.Continue) {
-		resource := make(Resource)
+func (f *Fuzzer) newResourceFuzzer() func(resource *structs.Resource, c fuzz.Continue) {
+	return func(r *structs.Resource, c fuzz.Continue) {
+		resource := make(structs.Resource)
 		for _, attribute := range f.schema.Attributes {
 			f.fuzzAttribute(resource, attribute, c)
 		}
