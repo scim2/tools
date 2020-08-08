@@ -26,7 +26,7 @@ func marshalerEncoder(v reflect.Value) (map[string]interface{}, error) {
 	}
 	m, ok := v.Interface().(Marshaler)
 	if !ok {
-		return nil, errors.New("value does not implement marshaller")
+		return nil, errors.New("value does not implement marshaler")
 	}
 	return m.MarshalSCIM()
 }
