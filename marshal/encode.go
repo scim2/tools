@@ -31,7 +31,7 @@ func marshalerEncoder(v reflect.Value) (map[string]interface{}, error) {
 	return m.MarshalSCIM()
 }
 
-func newMapEncoder(v reflect.Value) (map[string]interface{}, error) {
+func mapEncoder(v reflect.Value) (map[string]interface{}, error) {
 	t := v.Type()
 	if t.Key().Kind() != reflect.String {
 		return nil, errors.New("key of map is not a string")
@@ -65,7 +65,7 @@ func newMapEncoder(v reflect.Value) (map[string]interface{}, error) {
 	return resource, nil
 }
 
-func newStructEncoder(v reflect.Value) (map[string]interface{}, error) {
+func structEncoder(v reflect.Value) (map[string]interface{}, error) {
 	var (
 		resource    = make(structs.Resource)
 		mVToAdd     = make(map[string][]interface{})
@@ -75,17 +75,21 @@ func newStructEncoder(v reflect.Value) (map[string]interface{}, error) {
 
 	t := v.Type()
 	for i := 0; i < v.NumField(); i++ {
-		field := v.Field(i)
-		if field.IsZero() {
+		tag := parseTags(t.Field(i))
+		if tag.ignore {
 			continue
 		}
 
-		tag := parseTags(t.Field(i))
+		field := v.Field(i)
+		if !tag.allowZero && field.IsZero() {
+			continue
+		}
+
 		switch tag.attrType() {
 		case simple:
 			switch field.Kind() {
 			case reflect.Struct:
-				sub, err := newStructEncoder(field)
+				sub, err := structEncoder(field)
 				if err != nil {
 					return nil, err
 				}
@@ -96,6 +100,8 @@ func newStructEncoder(v reflect.Value) (map[string]interface{}, error) {
 					}
 					m[k] = v
 				}
+			case reflect.Slice:
+				return nil, errors.New(fmt.Sprintf("invalid simple attribute: %s", field.Kind()))
 			default:
 				resource[tag.name] = field.Interface()
 			}
@@ -118,13 +124,14 @@ func newStructEncoder(v reflect.Value) (map[string]interface{}, error) {
 					fieldIndex := field.Index(i)
 					switch fieldIndex.Kind() {
 					case reflect.Struct:
-						sub, err := newStructEncoder(fieldIndex)
+						sub, err := structEncoder(fieldIndex)
 						if err != nil {
 							return nil, err
 						}
 						mv = append(mv, sub)
 					default:
-						mv = append(mv, fieldIndex.Interface())
+						value := fieldIndex.Interface()
+						mv = append(mv, value)
 					}
 				}
 			default:
@@ -206,7 +213,7 @@ func unsupportedTypeEncoder(v reflect.Value) (map[string]interface{}, error) {
 	return nil, errors.New(fmt.Sprintf("unsupported type %s", v.Type()))
 }
 
-// Marshaler is the interface implemented by types that can marshal themselves into valid SCIM resources.
+// Marshaler is the interface implemented by types that can marshal themselves into SCIM resources.
 type Marshaler interface {
 	MarshalSCIM() (structs.Resource, error)
 }
@@ -222,11 +229,12 @@ func typeEncoder(t reflect.Type) encoderFunc {
 	case reflect.Interface:
 		return interfaceEncoder
 	case reflect.Map:
-		return newMapEncoder
+		return mapEncoder
 	case reflect.Ptr:
-		return typeEncoder(t.Elem())
+		ptr := t.Elem()
+		return typeEncoder(ptr.Elem())
 	case reflect.Struct:
-		return newStructEncoder
+		return structEncoder
 	default:
 		return unsupportedTypeEncoder
 	}

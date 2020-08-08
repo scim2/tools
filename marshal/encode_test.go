@@ -89,6 +89,65 @@ func TestMarshal(t *testing.T) {
 			t.Errorf("resources do not match:\n%v\n%v", resource, ref)
 		}
 	})
+
+	type (
+		s1 struct {
+			String string
+			Int    int
+			Bool   bool `scim:",0"`
+
+			IgnoreMe []interface{} `scim:",!"`
+		}
+
+		s2 struct {
+			Slice    []interface{} `scim:",mV"`
+			Slice3   interface{}   `scim:"slice,mV,i=0;2"`
+			InvalidS []interface{} // must be multi valued or ignored
+		}
+	)
+
+	for _, test := range []struct {
+		v        interface{}
+		errMsg   string
+		resource string
+	}{
+		{v: "", errMsg: "unsupported type string"},
+		{v: 0, errMsg: "unsupported type int"},
+		{v: 0.0, errMsg: "unsupported type float64"},
+		{v: true, errMsg: "unsupported type bool"},
+		{v: []interface{}{}, errMsg: "unsupported type []interface {}"},
+		{v: &[]interface{}{}, errMsg: "unsupported type []interface {}"},
+		{v: make([]string, 10, 10), errMsg: "unsupported type []string"},
+		{v: map[string]interface{}{}, resource: "map[]"},
+		{v: &map[string]interface{}{}, resource: "map[]"},
+		{v: map[string]interface{}{"_": 0}, resource: "map[_:0]"},
+		{v: &map[string]interface{}{"_": 0}, resource: "map[_:0]"},
+		{v: map[int]interface{}{0: "_"}, errMsg: "key of map is not a string"},
+
+		{v: s1{String: "_", Int: 0}, resource: "map[bool:false string:_]"},
+		{v: s1{String: "_", Int: 1, Bool: true}, resource: "map[bool:true int:1 string:_]"},
+		{v: s1{IgnoreMe: []interface{}{"_"}}, resource: "map[bool:false]"},
+
+		{v: s2{Slice: []interface{}{"_"}}, resource: "map[slice:[_]]"},
+		{v: s2{Slice3: "_"}, resource: "map[slice:[_ <nil> _]]"},
+		{v: s2{InvalidS: []interface{}{"_"}}, errMsg: "invalid simple attribute: slice"},
+	} {
+		r, err := Marshal(test.v)
+		if test.errMsg != "" {
+			if err == nil {
+				t.Errorf("error expected: %q, got none", test.errMsg)
+			} else if test.errMsg != err.Error() {
+				t.Errorf("expected %q, got %q", test.errMsg, err)
+			}
+		} else if test.errMsg == "" && err != nil {
+			t.Errorf("no error expected: got %q", err)
+		}
+
+		resource := fmt.Sprintf("%v", r)
+		if test.resource != "" && test.resource != resource {
+			t.Errorf("expected %s, got %s", test.resource, resource)
+		}
+	}
 }
 
 func TestMarshalMap(t *testing.T) {
