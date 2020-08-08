@@ -13,24 +13,20 @@ func Marshal(v interface{}) (structs.Resource, error) {
 	return reflectValue(reflect.ValueOf(v))
 }
 
-func emptyResource() structs.Resource {
-	return make(structs.Resource)
-}
-
 func interfaceEncoder(v reflect.Value) (map[string]interface{}, error) {
 	if v.IsNil() {
-		return emptyResource(), errors.New("nil")
+		return nil, errors.New("interface is nil")
 	}
 	return reflectValue(v.Elem())
 }
 
 func marshalerEncoder(v reflect.Value) (map[string]interface{}, error) {
 	if v.Kind() == reflect.Ptr && v.IsNil() {
-		return emptyResource(), errors.New("nil")
+		return nil, errors.New("ptr is nil")
 	}
 	m, ok := v.Interface().(Marshaler)
 	if !ok {
-		return emptyResource(), errors.New("does not implement marshaller")
+		return nil, errors.New("value does not implement marshaller")
 	}
 	return m.MarshalSCIM()
 }
@@ -38,17 +34,16 @@ func marshalerEncoder(v reflect.Value) (map[string]interface{}, error) {
 func newMapEncoder(v reflect.Value) (map[string]interface{}, error) {
 	t := v.Type()
 	if t.Key().Kind() != reflect.String {
-		return emptyResource(), errors.New("invalid type")
+		return nil, errors.New("key of map is not a string")
 	}
 
 	elementEncoder := typeEncoder(t.Elem())
-
 	resource := make(structs.Resource)
-
 	keys := v.MapKeys()
+
 	for _, k := range keys {
 		if k.Kind() != reflect.String {
-			return emptyResource(), errors.New("invalid type")
+			return nil, errors.New("invalid type")
 		}
 
 		value := v.MapIndex(k)
@@ -60,7 +55,7 @@ func newMapEncoder(v reflect.Value) (map[string]interface{}, error) {
 		case reflect.Map:
 			sub, err := elementEncoder(value)
 			if err != nil {
-				return emptyResource(), err
+				return nil, err
 			}
 			resource[k.String()] = sub
 		default:
@@ -86,60 +81,25 @@ func newStructEncoder(v reflect.Value) (map[string]interface{}, error) {
 		}
 
 		tag := parseTags(t.Field(i))
-		if tag.sub == "" && !tag.multiValued {
-			resource[tag.name] = field.Interface()
-			continue
-		}
-		if tag.sub != "" {
-			if !tag.multiValued {
-				m, ok := mapsToAdd[tag.name]
-				if !ok {
-					mapsToAdd[tag.name] = make(map[string]interface{})
-					m = mapsToAdd[tag.name]
+		switch tag.attrType() {
+		case simple:
+			switch field.Kind() {
+			case reflect.Struct:
+				sub, err := newStructEncoder(field)
+				if err != nil {
+					return nil, err
 				}
-				_, ok = m[tag.sub]
-				if ok {
-					return nil, errors.New("already full")
-				}
-				m[tag.sub] = field.Interface()
-			} else {
-				mv, ok := mVMapsToAdd[tag.name]
-				if !ok {
-					mVMapsToAdd[tag.name] = make([]map[string]interface{}, 0)
-					mv = mVMapsToAdd[tag.name]
-				}
-
-				for _, i := range tag.indexes {
-					for len(mv) < i+1 {
-						mv = append(mv, make(map[string]interface{}))
+				m := ensureMapInMap(tag.name, mapsToAdd)
+				for k, v := range sub {
+					if _, ok := m[k]; ok {
+						return nil, errors.New(fmt.Sprintf("duplicate names: %s", tag.sub))
 					}
+					m[k] = v
 				}
-
-				if len(tag.indexes) == 0 {
-					var added bool
-					for _, m := range mv {
-						_, ok := m[tag.sub]
-						if !ok {
-							m[tag.sub] = field.Interface()
-							added = true
-							break
-						}
-					}
-					if !added {
-						mv = append(mv, map[string]interface{}{
-							tag.sub: field.Interface(),
-						})
-					}
-				} else {
-					for _, i := range tag.indexes {
-						mv[i][tag.sub] = field.Interface()
-					}
-				}
-				mVMapsToAdd[tag.name] = mv
+			default:
+				resource[tag.name] = field.Interface()
 			}
-			continue
-		}
-		if tag.multiValued {
+		case simpleMultiValued:
 			mv, ok := mVToAdd[tag.name]
 			if !ok {
 				mVToAdd[tag.name] = make([]interface{}, 0)
@@ -155,7 +115,17 @@ func newStructEncoder(v reflect.Value) (map[string]interface{}, error) {
 			switch field.Kind() {
 			case reflect.Slice:
 				for i := 0; i < field.Len(); i++ {
-					mv = append(mv, field.Index(i).Interface())
+					fieldIndex := field.Index(i)
+					switch fieldIndex.Kind() {
+					case reflect.Struct:
+						sub, err := newStructEncoder(fieldIndex)
+						if err != nil {
+							return nil, err
+						}
+						mv = append(mv, sub)
+					default:
+						mv = append(mv, fieldIndex.Interface())
+					}
 				}
 			default:
 				if len(tag.indexes) == 0 {
@@ -167,6 +137,46 @@ func newStructEncoder(v reflect.Value) (map[string]interface{}, error) {
 				}
 			}
 			mVToAdd[tag.name] = mv
+		case complex:
+			m := ensureMapInMap(tag.name, mapsToAdd)
+			if _, ok := m[tag.sub]; ok {
+				return nil, errors.New(fmt.Sprintf("duplicate names: %s", tag.sub))
+			}
+			m[tag.sub] = field.Interface()
+		case complexMultiValued:
+			mv, ok := mVMapsToAdd[tag.name]
+			if !ok {
+				mVMapsToAdd[tag.name] = make([]map[string]interface{}, 0)
+				mv = mVMapsToAdd[tag.name]
+			}
+
+			for _, i := range tag.indexes {
+				for len(mv) < i+1 {
+					mv = append(mv, make(map[string]interface{}))
+				}
+			}
+
+			if len(tag.indexes) == 0 {
+				var added bool
+				for _, m := range mv {
+					_, ok := m[tag.sub]
+					if !ok {
+						m[tag.sub] = field.Interface()
+						added = true
+						break
+					}
+				}
+				if !added {
+					mv = append(mv, map[string]interface{}{
+						tag.sub: field.Interface(),
+					})
+				}
+			} else {
+				for _, i := range tag.indexes {
+					mv[i][tag.sub] = field.Interface()
+				}
+			}
+			mVMapsToAdd[tag.name] = mv
 		}
 	}
 
@@ -187,13 +197,13 @@ func newStructEncoder(v reflect.Value) (map[string]interface{}, error) {
 
 func reflectValue(v reflect.Value) (structs.Resource, error) {
 	if !v.IsValid() {
-		return emptyResource(), errors.New("invalid value")
+		return nil, errors.New("value is invalid")
 	}
 	return typeEncoder(v.Type())(v)
 }
 
 func unsupportedTypeEncoder(v reflect.Value) (map[string]interface{}, error) {
-	return emptyResource(), errors.New(fmt.Sprintf("unsupported type %s", v.Type()))
+	return nil, errors.New(fmt.Sprintf("unsupported type %s", v.Type()))
 }
 
 // Marshaler is the interface implemented by types that can marshal themselves into valid SCIM resources.

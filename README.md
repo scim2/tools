@@ -26,19 +26,27 @@ resource := New(refSchema).
 # Marshaller
 A simple marshaller that converts structs to maps based on their tags.
 
-> **!** the current implementation does not marshal recursively.
-
 ```go
+type Name struct {
+    FirstName string `scim:"givenName"`
+    LastName  string `scim:"familyName"`
+}
+
 type ResourceStruct struct {
-	Name string `scim:"userName"`
+    UserName string
+    Name     Name
 }
 
 resourceStruct := ResourceStruct{
-    Name: "di-wu",
+    UserName: "di-wu",
+    Name: Name{
+        FirstName: "Quint", 
+        LastName:  "Daenen",
+    },
 }
 
 resource, _ := Marshal(resourceStruct)
 
-// OUTPUT: map[userName:di-wu]
+// OUTPUT: map[name:map[familyName:Daenen givenName:Quint] userName:di-wu]
 ```
 

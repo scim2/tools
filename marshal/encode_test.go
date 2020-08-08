@@ -9,6 +9,14 @@ import (
 
 func TestMarshal(t *testing.T) {
 	t.Run("map", func(t *testing.T) {
+		type Roles []struct {
+			Value string `scim:"value"`
+		}
+
+		type Name struct {
+			Full string `scim:"fullName"`
+		}
+
 		type User struct {
 			UserName     string
 			DisplayName  string
@@ -20,6 +28,8 @@ func TestMarshal(t *testing.T) {
 			Primary      bool     `scim:"emails.primary,multiValued,index=2"`
 			RandomValues []string `scim:"values,multiValued"`
 			RandomValue  string   `scim:"values,multiValued,index=0"`
+			Roles        Roles    `scim:"roles,multiValued"`
+			FullName     Name     `scim:"name"`
 		}
 
 		user := User{
@@ -33,6 +43,11 @@ func TestMarshal(t *testing.T) {
 			Primary:      true,
 			RandomValues: []string{"replaced", "random", "values"},
 			RandomValue:  "some",
+			Roles: Roles{
+				{Value: "Author"},
+				{Value: "Member"},
+			},
+			FullName: Name{Full: "Quint Daenen"},
 		}
 
 		resource, err := Marshal(user)
@@ -59,6 +74,11 @@ func TestMarshal(t *testing.T) {
 			"name": map[string]interface{}{
 				"familyName": "Daenen",
 				"givenName":  "Quint",
+				"fullName":   "Quint Daenen",
+			},
+			"roles": []map[string]interface{}{
+				{"value": "Author"},
+				{"value": "Member"},
 			},
 			"userName": "di-wu",
 			"values": []string{
