@@ -2,232 +2,307 @@ package marshal
 
 import (
 	"fmt"
-	"testing"
-
 	"github.com/di-wu/scim-tools/structs"
+	"testing"
 )
 
-func TestMarshal(t *testing.T) {
-	t.Run("map", func(t *testing.T) {
-		type Roles []struct {
-			Value string `scim:"value"`
-		}
+func TestComplex(t *testing.T) {
+	type structPtrString struct {
+		Ptr *string `scim:"ptr"`
+	}
 
-		type Name struct {
-			Full string `scim:"fullName"`
-		}
+	type complex struct {
+		Bool    bool                   `scim:"complex.bool"`
+		Int     int                    `scim:"complex.int"`
+		Array   [2]interface{}         `scim:"complex.array"`
+		Map     map[string]interface{} `scim:"complex.map"`
+		Ptr     *string                `scim:"complex.ptr"`
+		Slice   []interface{}          `scim:"complex.slice"`
+		String  string                 `scim:"complex.string"`
+		Struct  structPtrString        `scim:"complex.struct"`
+		Structs []structPtrString      `scim:"complex.structs"`
+	}
 
-		type User struct {
-			UserName     string
-			DisplayName  string
-			FirstName    string   `scim:"name.givenName"`
-			LastName     string   `scim:"name.familyName"`
-			Email        string   `scim:"emails.value,multiValued,index=0;2"`
-			WorkEmail    string   `scim:"emails.value,multiValued"`
-			EmailType    string   `scim:"emails.type,multiValued,index=0;1"`
-			Primary      bool     `scim:"emails.primary,multiValued,index=2"`
-			RandomValues []string `scim:"values,multiValued"`
-			RandomValue  string   `scim:"values,multiValued,index=0"`
-			Roles        Roles    `scim:"roles,multiValued"`
-			FullName     Name     `scim:"name"`
-		}
+	str := "_"
 
-		user := User{
-			UserName:     "di-wu",
-			DisplayName:  "quint",
-			FirstName:    "Quint",
-			LastName:     "Daenen",
-			Email:        "me@di-wu.be",
-			WorkEmail:    "quint@elimity.com",
-			EmailType:    "work",
-			Primary:      true,
-			RandomValues: []string{"replaced", "random", "values"},
-			RandomValue:  "some",
-			Roles: Roles{
-				{Value: "Author"},
-				{Value: "Member"},
-			},
-			FullName: Name{Full: "Quint Daenen"},
-		}
-
-		resource, err := Marshal(user)
+	t.Run("valid", func(t *testing.T) {
+		resource, err := Marshal(complex{
+			Bool:   true,
+			Int:    1,
+			Map:    map[string]interface{}{str: str},
+			Ptr:    &str,
+			String: str,
+			Struct: structPtrString{Ptr: &str},
+		})
 		if err != nil {
 			t.Error(err)
 		}
-
-		ref := map[string]interface{}{
-			"displayName": "quint",
-			"emails": []map[string]interface{}{
-				{
-					"type":  "work",
-					"value": "me@di-wu.be",
-				},
-				{
-					"type":  "work",
-					"value": "quint@elimity.com",
-				},
-				{
-					"primary": true,
-					"value":   "me@di-wu.be",
-				},
-			},
-			"name": map[string]interface{}{
-				"familyName": "Daenen",
-				"givenName":  "Quint",
-				"fullName":   "Quint Daenen",
-			},
-			"roles": []map[string]interface{}{
-				{"value": "Author"},
-				{"value": "Member"},
-			},
-			"userName": "di-wu",
-			"values": []string{
-				"some", "random", "values",
+		ref := structs.Resource{
+			"complex": structs.Resource{
+				"bool":   true,
+				"int":    1,
+				"map":    structs.Resource{str: str},
+				"ptr":    str,
+				"string": str,
+				"struct": structs.Resource{"ptr": str},
 			},
 		}
-		if fmt.Sprintf("%v", ref) != fmt.Sprintf("%v", resource) {
-			t.Errorf("resources do not match:\n%v\n%v", resource, ref)
+		if fmt.Sprintf("%#v", resource) != fmt.Sprintf("%#v", ref) {
+			t.Error(fmt.Sprintf("\n%#v", resource), fmt.Sprintf("\n%#v", ref))
 		}
 	})
 
-	type (
-		s1 struct {
-			String string
-			Int    int
-			Bool   bool `scim:",0"`
-
-			IgnoreMe []interface{} `scim:",!"`
-		}
-
-		s2 struct {
-			Slice    []interface{} `scim:",mV"`
-			Slice3   interface{}   `scim:"slice,mV,i=0;2"`
-			InvalidS []interface{} // must be multi valued or ignored
-		}
-	)
-
-	for _, test := range []struct {
-		v        interface{}
-		errMsg   string
-		resource string
-	}{
-		{v: "", errMsg: "unsupported type string"},
-		{v: 0, errMsg: "unsupported type int"},
-		{v: 0.0, errMsg: "unsupported type float64"},
-		{v: true, errMsg: "unsupported type bool"},
-		{v: []interface{}{}, errMsg: "unsupported type []interface {}"},
-		{v: &[]interface{}{}, errMsg: "unsupported type []interface {}"},
-		{v: make([]string, 10, 10), errMsg: "unsupported type []string"},
-		{v: map[string]interface{}{}, resource: "map[]"},
-		{v: &map[string]interface{}{}, resource: "map[]"},
-		{v: map[string]interface{}{"_": 0}, resource: "map[_:0]"},
-		{v: &map[string]interface{}{"_": 0}, resource: "map[_:0]"},
-		{v: map[int]interface{}{0: "_"}, errMsg: "key of map is not a string"},
-
-		{v: s1{String: "_", Int: 0}, resource: "map[bool:false string:_]"},
-		{v: s1{String: "_", Int: 1, Bool: true}, resource: "map[bool:true int:1 string:_]"},
-		{v: s1{IgnoreMe: []interface{}{"_"}}, resource: "map[bool:false]"},
-
-		{v: s2{Slice: []interface{}{"_"}}, resource: "map[slice:[_]]"},
-		{v: s2{Slice3: "_"}, resource: "map[slice:[_ <nil> _]]"},
-		{v: s2{InvalidS: []interface{}{"_"}}, errMsg: "invalid simple attribute: slice"},
-	} {
-		r, err := Marshal(test.v)
-		if test.errMsg != "" {
-			if err == nil {
-				t.Errorf("error expected: %q, got none", test.errMsg)
-			} else if test.errMsg != err.Error() {
-				t.Errorf("expected %q, got %q", test.errMsg, err)
+	t.Run("invalid", func(t *testing.T) {
+		t.Run("array", func(t *testing.T) {
+			if _, err := Marshal(complex{
+				Array: [2]interface{}{str},
+			}); err == nil {
+				t.Error("error expected, got none")
 			}
-		} else if test.errMsg == "" && err != nil {
-			t.Errorf("no error expected: got %q", err)
-		}
-
-		resource := fmt.Sprintf("%v", r)
-		if test.resource != "" && test.resource != resource {
-			t.Errorf("expected %s, got %s", test.resource, resource)
-		}
-	}
-}
-
-func TestMarshalMap(t *testing.T) {
-	t.Run("default", func(t *testing.T) {
-		testMarshal(t, map[string]interface{}{
-			"name": "test",
 		})
-	})
 
-	t.Run("string", func(t *testing.T) {
-		testMarshal(t, map[string]string{
-			"name": "test",
+		t.Run("slice", func(t *testing.T) {
+			if _, err := Marshal(complex{
+				Slice: []interface{}{str},
+			}); err == nil {
+				t.Error("error expected, got none")
+			}
 		})
-	})
 
-	_, err := Marshal([]string{"test"})
-	if err == nil {
-		t.Error("error expected")
-	}
-}
-
-func TestMarshalStruct(t *testing.T) {
-	test := testMarshaller{
-		Name: "test",
-	}
-
-	t.Run("func", func(t *testing.T) {
-		testMarshal(t, test)
-	})
-
-	t.Run("ptr", func(t *testing.T) {
-		testMarshal(t, &test)
-	})
-
-	t.Run("interface", func(t *testing.T) {
-		resource, err := test.MarshalSCIM()
-		if err != nil {
-			t.Error(err)
-			return
-		}
-		testName(t, resource)
-	})
-
-	t.Run("tags", func(t *testing.T) {
-		testMarshal(t, testTagMarshaller{
-			UserName: "test",
+		t.Run("slice", func(t *testing.T) {
+			if _, err := Marshal(complex{
+				Structs: []structPtrString{
+					{Ptr: &str},
+				},
+			}); err == nil {
+				t.Error("error expected, got none")
+			}
 		})
 	})
 }
 
-func testMarshal(t *testing.T, test interface{}) structs.Resource {
-	resource, err := Marshal(test)
+func TestComplexMultiValued(t *testing.T) {
+	type structPtrString struct {
+		Ptr *string `scim:",mV"`
+	}
+
+	type simple struct {
+		Bool    bool                   `scim:"complexMV.bool,mV,_mV"`
+		Int     int                    `scim:"complexMV1.int,mV"`
+		Array   [2]interface{}         `scim:"complexMV2.array,mV"`
+		Map     map[string]interface{} `scim:"complexMV3.map,mV"`
+		Ptr     *string                `scim:"complex.ptr,_mV"`
+		Slice   []interface{}          `scim:"complexMV5.slice,mV,_mV"`
+		String  string                 `scim:"complex.string,_mV"`
+		Struct  structPtrString        `scim:"complex.struct,_mV"`
+		Structs []structPtrString      `scim:"complexMV8.structs,mV,_mV"`
+	}
+
+	str := "_"
+
+	resource, err := Marshal(simple{
+		Bool:    true,
+		Int:     1,
+		Array:   [2]interface{}{str, str},
+		Map:     map[string]interface{}{str: str},
+		Ptr:     &str,
+		Slice:   []interface{}{str},
+		String:  str,
+		Struct:  structPtrString{Ptr: &str},
+		Structs: []structPtrString{{Ptr: &str}, {Ptr: &str}},
+	})
 	if err != nil {
 		t.Error(err)
-		return nil
 	}
-	return resource
-}
-
-func testName(t *testing.T, resource structs.Resource) {
-	v, ok := resource["name"]
-	if !ok {
-		t.Errorf("could nog find \"name\" in map")
-		return
+	ref := structs.Resource{
+		"complex": structs.Resource{
+			"ptr":    str,
+			"string": str,
+			"struct": structs.Resource{"ptr": []interface{}{str}},
+		},
+		"complexMV":  []structs.Resource{{"bool": []interface{}{true}}},
+		"complexMV1": []structs.Resource{{"int": 1}},
+		"complexMV2": []structs.Resource{{"array": str}, {"array": str}},
+		"complexMV3": []structs.Resource{{"map": structs.Resource{str: str}}},
+		"complexMV5": []structs.Resource{{"slice": []interface{}{str}}},
+		"complexMV8": []structs.Resource{
+			{"structs": []structs.Resource{{"ptr": []interface{}{str}}}},
+			{"structs": []structs.Resource{{"ptr": []interface{}{str}}}},
+		},
 	}
-	if v.(string) != "test" {
-		t.Errorf("expected \"test\", got %v", v)
+	if fmt.Sprintf("%#v", resource) != fmt.Sprintf("%#v", ref) {
+		t.Error(fmt.Sprintf("\n%#v", resource), fmt.Sprintf("\n%#v", ref))
 	}
 }
 
-type testMarshaller struct {
-	Name string
+func TestSimple(t *testing.T) {
+	type structPtrString struct {
+		Ptr *string
+	}
+
+	type simple struct {
+		Bool    bool
+		Int     int
+		Array   [2]interface{}
+		Map     map[string]interface{}
+		Ptr     *string
+		Slice   []interface{}
+		String  string
+		Struct  structPtrString
+		Structs []structPtrString
+	}
+	str := "_"
+
+	t.Run("valid", func(t *testing.T) {
+		resource, err := Marshal(simple{
+			Bool:   true,
+			Int:    1,
+			Map:    map[string]interface{}{str: str},
+			Ptr:    &str,
+			String: str,
+			Struct: structPtrString{
+				Ptr: &str,
+			},
+		})
+		if err != nil {
+			t.Error(err)
+		}
+		ref := structs.Resource{
+			"bool":   true,
+			"int":    1,
+			"map":    structs.Resource{str: str},
+			"ptr":    str,
+			"string": str,
+			"struct": structs.Resource{"ptr": str},
+		}
+		if fmt.Sprintf("%#v", resource) != fmt.Sprintf("%#v", ref) {
+			t.Error(fmt.Sprintf("\n%#v", resource), fmt.Sprintf("\n%#v", ref))
+		}
+	})
+
+	t.Run("invalid", func(t *testing.T) {
+		t.Run("array", func(t *testing.T) {
+			if _, err := Marshal(simple{
+				Array: [2]interface{}{str},
+			}); err == nil {
+				t.Error("error expected, got none")
+			}
+		})
+
+		t.Run("slice", func(t *testing.T) {
+			if _, err := Marshal(simple{
+				Slice: []interface{}{str},
+			}); err == nil {
+				t.Error("error expected, got none")
+			}
+		})
+
+		t.Run("slice", func(t *testing.T) {
+			if _, err := Marshal(simple{
+				Structs: []structPtrString{
+					{Ptr: &str},
+				},
+			}); err == nil {
+				t.Error("error expected, got none")
+			}
+		})
+
+		t.Run("map", func(t *testing.T) {
+			invalid := []interface{}{
+				[]interface{}{str},
+				[2]interface{}{str},
+				map[string]interface{}{str: str},
+				structPtrString{},
+			}
+
+			for _, test := range invalid {
+				if _, err := Marshal(simple{
+					Map: map[string]interface{}{
+						"slice": test,
+					},
+				}); err == nil {
+					t.Error("error expected, got none")
+				}
+			}
+		})
+
+		t.Run("nested", func(t *testing.T) {
+			type nested struct {
+				Name string
+				N    *nested
+			}
+
+			if _, err := Marshal(nested{
+				Name: str,
+				N: &nested{
+					Name: str,
+				},
+			}); err != nil {
+				t.Errorf("no error expected, got %q", err)
+			}
+
+			if _, err := Marshal(nested{
+				Name: str,
+				N: &nested{
+					Name: str,
+					N: &nested{
+						Name: str,
+					},
+				},
+			}); err == nil {
+				t.Error("expected error, got none")
+			}
+		})
+	})
 }
 
-func (m testMarshaller) MarshalSCIM() (structs.Resource, error) {
-	return structs.Resource{
-		"name": m.Name,
-	}, nil
-}
+func TestSimpleMultiValued(t *testing.T) {
+	type structPtrString struct {
+		Ptr *string `scim:",mV"`
+	}
 
-type testTagMarshaller struct {
-	UserName string `scim:"name"`
+	type simple struct {
+		Bool    bool                   `scim:",mV"`
+		Int     int                    `scim:",mV"`
+		Array   [2]interface{}         `scim:",mV"`
+		Map     map[string]interface{} `scim:",mV"`
+		Ptr     *string                `scim:",mV"`
+		Slice   []interface{}          `scim:",mV"`
+		String  string                 `scim:",mV"`
+		Struct  structPtrString        `scim:",mV"`
+		Structs []structPtrString      `scim:",mV"`
+	}
+	str := "_"
+
+	resource, err := Marshal(simple{
+		Bool:   true,
+		Int:    1,
+		Array:  [2]interface{}{str},
+		Map:    map[string]interface{}{str: str},
+		Ptr:    &str,
+		Slice:  []interface{}{str, str},
+		String: str,
+		Struct: structPtrString{Ptr: &str},
+		Structs: []structPtrString{
+			{Ptr: &str},
+			{Ptr: &str},
+		},
+	})
+	if err != nil {
+		t.Error(err)
+	}
+	ref := structs.Resource{
+		"bool":    []interface{}{true},
+		"int":     []interface{}{1},
+		"array":   []interface{}{str},
+		"map":     []structs.Resource{{str: str}},
+		"ptr":     []interface{}{str},
+		"slice":   []interface{}{str, str},
+		"string":  []interface{}{str},
+		"struct":  []structs.Resource{{"ptr": []interface{}{str}}},
+		"structs": []structs.Resource{{"ptr": []interface{}{str}}, {"ptr": []interface{}{str}}},
+	}
+	if fmt.Sprintf("%#v", resource) != fmt.Sprintf("%#v", ref) {
+		t.Error(fmt.Sprintf("\n%#v", resource), fmt.Sprintf("\n%#v", ref))
+	}
 }

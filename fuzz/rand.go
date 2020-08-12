@@ -11,20 +11,6 @@ var asciiRanges = []characterRange{
 	{'0', '9'},
 }
 
-type characterRange struct {
-	first, last rune
-}
-
-func (r *characterRange) choose(rand *rand.Rand) rune {
-	count := int64(r.last - r.first)
-	return r.first + rune(rand.Int63n(count))
-}
-
-func randStringFromSlice(r *rand.Rand, strings []string) string {
-	n := r.Intn(len(strings))
-	return strings[n]
-}
-
 func randAlphaString(r *rand.Rand, length int) string {
 	runes := make([]rune, length)
 	for i := range runes {
@@ -37,4 +23,18 @@ func randDateTime() string {
 	min := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC).Unix()
 	sec := rand.Int63n(time.Now().Unix()-min) + min
 	return time.Unix(sec, 0).Format(time.RFC3339)
+}
+
+func randStringFromSlice(r *rand.Rand, strings []string) string {
+	n := r.Intn(len(strings))
+	return strings[n]
+}
+
+type characterRange struct {
+	first, last rune
+}
+
+func (r *characterRange) choose(rand *rand.Rand) rune {
+	count := int64(r.last - r.first)
+	return r.first + rune(rand.Int63n(count))
 }

@@ -33,13 +33,6 @@ func New(schema ReferenceSchema) *Fuzzer {
 	}
 }
 
-// RandSource causes the Fuzzer to get values from the given source of randomness.
-func (f *Fuzzer) RandSource(s rand.Source) *Fuzzer {
-	f.r = rand.New(s)
-	f.fuzzer.RandSource(s)
-	return f
-}
-
 // EmptyChance sets the probability of creating an empty field map to the given chance.
 // The chance should be between 0 (no empty fields) and 1 (all empty), inclusive.
 func (f *Fuzzer) EmptyChance(p float64) *Fuzzer {
@@ -47,6 +40,25 @@ func (f *Fuzzer) EmptyChance(p float64) *Fuzzer {
 		panic("p should be between 0 and 1, inclusive.")
 	}
 	f.emptyChance = p
+	return f
+}
+
+// Fuzz recursively fills a Resource based on fields the ReferenceSchema of the Fuzzer.
+func (f *Fuzzer) Fuzz() structs.Resource {
+	var resource structs.Resource
+	f.fuzzer.Funcs(f.newResourceFuzzer()).Fuzz(&resource)
+	return resource
+}
+
+// NeverEmpty makes sure that all passed attribute names are never empty during fuzzing.
+// Setting a complex attribute on never empty will also make their sub attributes never empty.
+// i.e. "displayName", "name.givenName" or "emails.value"
+func (f *Fuzzer) NeverEmpty(names ...string) *Fuzzer {
+	for _, attribute := range f.schema.Attributes {
+		for _, name := range names {
+			attribute.neverEmpty(name)
+		}
+	}
 	return f
 }
 
@@ -64,15 +76,10 @@ func (f *Fuzzer) NumElements(atLeast, atMost int) *Fuzzer {
 	return f
 }
 
-// NeverEmpty makes sure that all passed attribute names are never empty during fuzzing.
-// Setting a complex attribute on never empty will also make their sub attributes never empty.
-// i.e. "displayName", "name.givenName" or "emails.value"
-func (f *Fuzzer) NeverEmpty(names ...string) *Fuzzer {
-	for _, attribute := range f.schema.Attributes {
-		for _, name := range names {
-			attribute.neverEmpty(name)
-		}
-	}
+// RandSource causes the Fuzzer to get values from the given source of randomness.
+func (f *Fuzzer) RandSource(s rand.Source) *Fuzzer {
+	f.r = rand.New(s)
+	f.fuzzer.RandSource(s)
 	return f
 }
 
@@ -81,27 +88,6 @@ func (f *Fuzzer) elementCount() int {
 		return f.minElements
 	}
 	return f.minElements + f.r.Intn(f.maxElements-f.minElements+1)
-}
-
-func (f *Fuzzer) shouldFill() bool {
-	return f.r.Float64() > f.emptyChance
-}
-
-// Fuzz recursively fills a Resource based on fields the ReferenceSchema of the Fuzzer.
-func (f *Fuzzer) Fuzz() structs.Resource {
-	var resource structs.Resource
-	f.fuzzer.Funcs(f.newResourceFuzzer()).Fuzz(&resource)
-	return resource
-}
-
-func (f *Fuzzer) newResourceFuzzer() func(resource *structs.Resource, c fuzz.Continue) {
-	return func(r *structs.Resource, c fuzz.Continue) {
-		resource := make(structs.Resource)
-		for _, attribute := range f.schema.Attributes {
-			f.fuzzAttribute(resource, attribute, c)
-		}
-		*r = resource
-	}
 }
 
 func (f *Fuzzer) fuzzAttribute(resource map[string]interface{}, attribute *Attribute, c fuzz.Continue) {
@@ -166,4 +152,18 @@ func (f *Fuzzer) fuzzSingleAttribute(attribute *Attribute, c fuzz.Continue) inte
 	default:
 		panic(fmt.Sprintf("unknown attribute type %s", attribute.Type))
 	}
+}
+
+func (f *Fuzzer) newResourceFuzzer() func(resource *structs.Resource, c fuzz.Continue) {
+	return func(r *structs.Resource, c fuzz.Continue) {
+		resource := make(structs.Resource)
+		for _, attribute := range f.schema.Attributes {
+			f.fuzzAttribute(resource, attribute, c)
+		}
+		*r = resource
+	}
+}
+
+func (f *Fuzzer) shouldFill() bool {
+	return f.r.Float64() > f.emptyChance
 }

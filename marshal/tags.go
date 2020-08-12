@@ -6,52 +6,21 @@ import (
 	"strings"
 )
 
-type attributeType string
-
-var (
-	complexMultiValued attributeType = "c mV"
-	complex            attributeType = "c"
-	simpleMultiValued  attributeType = "s mV"
-	simple             attributeType = "s"
-)
-
 type tag struct {
-	name, sub   string
+	name        string
 	multiValued bool
+	indexes     []int
 	allowZero   bool
 	ignore      bool
-	indexes     []int
-}
-
-func (t tag) attrType() attributeType {
-	if t.sub == "" {
-		if t.multiValued {
-			return simpleMultiValued
-		}
-		return simple
-	}
-	if t.multiValued {
-		return complexMultiValued
-	}
-	return complex
-}
-
-func (t tag) max() int {
-	var max int
-	for _, i := range t.indexes {
-		if i > max {
-			max = i
-		}
-	}
-	return max
+	sub         *tag
 }
 
 func parseTags(field reflect.StructField) tag {
 	var t tag
 
-	tag := field.Tag.Get("scim")
-	tags := strings.Split(tag, ",")
-	if tag == "" {
+	scimTag := field.Tag.Get("scim")
+	tags := strings.Split(scimTag, ",")
+	if scimTag == "" {
 		t.name = lowerFirstRune(field.Name)
 	} else {
 		parts := strings.Split(tags[0], ".")
@@ -62,30 +31,104 @@ func parseTags(field reflect.StructField) tag {
 		}
 
 		if len(parts) > 1 {
-			t.sub = parts[1]
+			t.sub = &tag{
+				name: parts[1],
+			}
 		}
 	}
 
 	if len(tags) > 1 {
 		for _, option := range tags[1:] {
-			if strings.HasPrefix(option, "index=") || strings.HasPrefix(option, "i=") {
-				option = strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(option, "i"), "ndex"), "=")
-				for _, v := range strings.Split(option, ";") {
-					if i, err := strconv.Atoi(v); err == nil {
-						t.indexes = append(t.indexes, i)
-					}
+			var sub bool
+			if strings.HasPrefix(option, "_") {
+				if t.sub == nil {
+					continue
 				}
+				option = strings.TrimPrefix(option, "_")
+				sub = true
 			}
+
 			switch option {
 			case "multiValued", "mV":
-				t.multiValued = true
+				if !sub {
+					t.multiValued = true
+				} else {
+					t.sub.multiValued = true
+				}
 			case "zero", "0":
-				t.allowZero = true
+				if !sub {
+					t.allowZero = true
+				} else {
+					t.sub.allowZero = true
+				}
 			case "ignore", "!":
-				t.ignore = true
+				if !sub {
+					t.ignore = true
+				} else {
+					t.sub.ignore = true
+				}
+			}
+
+			if strings.HasPrefix(option, "index=") || strings.HasPrefix(option, "i=") {
+				option = strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(option, "i"), "ndex"), "=")
+				if option == "all" {
+					if !sub {
+						t.indexes = []int{-1}
+					} else {
+						t.sub.indexes = []int{-1}
+					}
+					break
+				}
+				for _, v := range strings.Split(option, ";") {
+					if !strings.Contains(v, "-") {
+						if i, err := strconv.Atoi(v); err == nil {
+							if 0 <= i {
+								if !sub {
+									t.indexes = append(t.indexes, i)
+								} else {
+									t.sub.indexes = append(t.indexes, i)
+								}
+							}
+						}
+					} else {
+						parts := strings.Split(v, "-")
+						if len(parts) != 2 {
+							break
+						}
+						from, err := strconv.Atoi(parts[0])
+						if err != nil {
+							break
+						}
+						to, err := strconv.Atoi(parts[1])
+						if err != nil {
+							break
+						}
+						for i := from; i <= to; i++ {
+							if !sub {
+								t.indexes = append(t.indexes, i)
+							} else {
+								t.sub.indexes = append(t.indexes, i)
+							}
+						}
+					}
+				}
 			}
 		}
 	}
 
 	return t
+}
+
+func (t tag) all() bool {
+	return len(t.indexes) == 1 && t.indexes[0] == -1
+}
+
+func (t tag) max() int {
+	var max int
+	for _, i := range t.indexes {
+		if i > max {
+			max = i
+		}
+	}
+	return max
 }

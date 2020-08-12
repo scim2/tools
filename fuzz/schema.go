@@ -4,21 +4,6 @@ import (
 	"strings"
 )
 
-// ReferenceSchema represents a resource schema that is used to fuzz resources that are defined by this schema.
-type ReferenceSchema struct {
-	ID          string       `json:"id"`
-	Name        string       `json:"name,omitempty"`
-	Description string       `json:"description,omitempty"`
-	Attributes  []*Attribute `json:"attributes"`
-}
-
-// ForEachAttribute calls given function on all attributes recursively.
-func (schema ReferenceSchema) ForEachAttribute(f func(attribute *Attribute)) {
-	for _, attribute := range schema.Attributes {
-		attribute.ForEachAttribute(f)
-	}
-}
-
 // Attribute represents an attribute of a ReferenceSchema.
 type Attribute struct {
 	Name            string       `json:"name"`
@@ -37,12 +22,18 @@ type Attribute struct {
 	required bool // manually set for fuzzer (schema.NeverEmpty)
 }
 
-func (attribute *Attribute) isComplex() bool {
-	return attribute.Type == ComplexType
+// ForEachAttribute calls given function on itself all sub attributes recursively.
+func (attribute *Attribute) ForEachAttribute(f func(attribute *Attribute)) {
+	f(attribute)
+	if attribute.isComplex() {
+		for _, subAttribute := range attribute.SubAttributes {
+			subAttribute.ForEachAttribute(f)
+		}
+	}
 }
 
-func (attribute *Attribute) shouldFill() bool {
-	return attribute.Required || attribute.required || attribute.isComplex()
+func (attribute *Attribute) isComplex() bool {
+	return attribute.Type == ComplexType
 }
 
 func (attribute *Attribute) neverEmpty(name string) {
@@ -63,15 +54,42 @@ func (attribute *Attribute) neverEmpty(name string) {
 	}
 }
 
-// ForEachAttribute calls given function on itself all sub attributes recursively.
-func (attribute *Attribute) ForEachAttribute(f func(attribute *Attribute)) {
-	f(attribute)
-	if attribute.isComplex() {
-		for _, subAttribute := range attribute.SubAttributes {
-			subAttribute.ForEachAttribute(f)
-		}
+func (attribute *Attribute) shouldFill() bool {
+	return attribute.Required || attribute.required || attribute.isComplex()
+}
+
+type Mutability string
+
+const (
+	ReadOnly  Mutability = "readOnly"
+	ReadWrite Mutability = "readWrite"
+	Immutable Mutability = "immutable"
+	WriteOnly Mutability = "writeOnly"
+)
+
+// ReferenceSchema represents a resource schema that is used to fuzz resources that are defined by this schema.
+type ReferenceSchema struct {
+	ID          string       `json:"id"`
+	Name        string       `json:"name,omitempty"`
+	Description string       `json:"description,omitempty"`
+	Attributes  []*Attribute `json:"attributes"`
+}
+
+// ForEachAttribute calls given function on all attributes recursively.
+func (schema ReferenceSchema) ForEachAttribute(f func(attribute *Attribute)) {
+	for _, attribute := range schema.Attributes {
+		attribute.ForEachAttribute(f)
 	}
 }
+
+type Returned string
+
+const (
+	Always  Returned = "always"
+	Never   Returned = "never"
+	Default Returned = "default"
+	Request Returned = "request"
+)
 
 type Type string
 
@@ -84,24 +102,6 @@ const (
 	DateTimeType  Type = "dateTime"
 	ReferenceType Type = "reference"
 	ComplexType   Type = "complex"
-)
-
-type Mutability string
-
-const (
-	ReadOnly  Mutability = "readOnly"
-	ReadWrite Mutability = "readWrite"
-	Immutable Mutability = "immutable"
-	WriteOnly Mutability = "writeOnly"
-)
-
-type Returned string
-
-const (
-	Always  Returned = "always"
-	Never   Returned = "never"
-	Default Returned = "default"
-	Request Returned = "request"
 )
 
 type Uniqueness string
