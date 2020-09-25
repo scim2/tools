@@ -23,19 +23,12 @@ resource := New(refSchema).
 // OUTPUT: map[displayName:vWKdUsVprh name:map[givenName:ieVkQrrcKL] userName:RFlLpsMnBW]
 ```
 
-# Marshaller
-A simple marshaller that converts structs to maps based on their tags.
-
+## Encoder
+A simple encoder that converts structs to maps based on their tags.
 
 ##### Tags
-- `index=0;1;5` (or `i=1`) \
-  Assigns the value to all elements with the given index in the multi valued attribute.
 - `multiValued` (or `mV`) \
   Makes the attribute multi valued.
-- `zero` (or `0`) \
-  Allow (Go) zero values (0 for integers for example).
-- `ignore` (or `!`) \
-  Skips the field entirely.
 
 ```go
 type Name struct {
@@ -61,3 +54,5 @@ resource, _ := Marshal(resourceStruct)
 // OUTPUT: map[name:map[familyName:Daenen givenName:Quint] userName:di-wu]
 ```
 
+## Struct Generator
+Converts a schema to a structure representing the resource described in that schema.
