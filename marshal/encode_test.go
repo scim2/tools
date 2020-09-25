@@ -2,7 +2,7 @@ package marshal
 
 import (
 	"fmt"
-	"github.com/di-wu/scim-tools/structs"
+	"github.com/scim2/tools/structs"
 	"testing"
 )
 

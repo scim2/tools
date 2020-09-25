@@ -3,7 +3,7 @@ package fuzz
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/di-wu/scim-tools/structs"
+	"github.com/scim2/tools/structs"
 	"github.com/google/gofuzz"
 	"math/rand"
 	"time"

@@ -3,7 +3,7 @@ package marshal
 import (
 	"errors"
 	"fmt"
-	"github.com/di-wu/scim-tools/structs"
+	"github.com/scim2/tools/structs"
 	"reflect"
 )
 
