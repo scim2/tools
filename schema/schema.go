@@ -1,8 +1,4 @@
-package fuzz
-
-import (
-	"strings"
-)
+package schema
 
 // Attribute represents an attribute of a ReferenceSchema.
 type Attribute struct {
@@ -18,44 +14,16 @@ type Attribute struct {
 	Returned        Returned     `json:"returned"`
 	Uniqueness      Uniqueness   `json:"uniqueness"`
 	ReferenceTypes  []string     `json:"referenceTypes"`
-
-	required bool // manually set for fuzzer (schema.NeverEmpty)
 }
 
 // ForEachAttribute calls given function on itself all sub attributes recursively.
 func (attribute *Attribute) ForEachAttribute(f func(attribute *Attribute)) {
 	f(attribute)
-	if attribute.isComplex() {
+	if attribute.Type == ComplexType {
 		for _, subAttribute := range attribute.SubAttributes {
 			subAttribute.ForEachAttribute(f)
 		}
 	}
-}
-
-func (attribute *Attribute) isComplex() bool {
-	return attribute.Type == ComplexType
-}
-
-func (attribute *Attribute) neverEmpty(name string) {
-	n := strings.SplitN(name, ".", 2)
-	if strings.EqualFold(n[0], attribute.Name) {
-		if len(n) > 1 && attribute.isComplex() {
-			for _, subAttribute := range attribute.SubAttributes {
-				subAttribute.neverEmpty(n[1])
-			}
-		} else {
-			attribute.required = true
-			if attribute.isComplex() {
-				attribute.ForEachAttribute(func(attribute *Attribute) {
-					attribute.required = true
-				})
-			}
-		}
-	}
-}
-
-func (attribute *Attribute) shouldFill() bool {
-	return attribute.Required || attribute.required || attribute.isComplex()
 }
 
 type Mutability string
@@ -76,8 +44,8 @@ type ReferenceSchema struct {
 }
 
 // ForEachAttribute calls given function on all attributes recursively.
-func (schema ReferenceSchema) ForEachAttribute(f func(attribute *Attribute)) {
-	for _, attribute := range schema.Attributes {
+func (s ReferenceSchema) ForEachAttribute(f func(attribute *Attribute)) {
+	for _, attribute := range s.Attributes {
 		attribute.ForEachAttribute(f)
 	}
 }

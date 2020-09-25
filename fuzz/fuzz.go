@@ -3,14 +3,16 @@ package fuzz
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/scim2/tools/structs"
 	"github.com/google/gofuzz"
+	"github.com/scim2/tools/schema"
+	"github.com/scim2/tools/structs"
 	"math/rand"
+	"strings"
 	"time"
 )
 
 type Fuzzer struct {
-	schema ReferenceSchema
+	schema schema.ReferenceSchema
 
 	fuzzer *fuzz.Fuzzer
 	r      *rand.Rand
@@ -21,7 +23,7 @@ type Fuzzer struct {
 }
 
 // New returns a new Fuzzer.
-func New(schema ReferenceSchema) *Fuzzer {
+func New(schema schema.ReferenceSchema) *Fuzzer {
 	r := rand.New(rand.NewSource(time.Now().Unix()))
 	return &Fuzzer{
 		schema:      schema,
@@ -56,10 +58,32 @@ func (f *Fuzzer) Fuzz() structs.Resource {
 func (f *Fuzzer) NeverEmpty(names ...string) *Fuzzer {
 	for _, attribute := range f.schema.Attributes {
 		for _, name := range names {
-			attribute.neverEmpty(name)
+			neverEmpty(name, attribute)
 		}
 	}
 	return f
+}
+
+func neverEmpty(name string, attribute *schema.Attribute) {
+	n := strings.SplitN(name, ".", 2)
+	if strings.EqualFold(n[0], attribute.Name) {
+		if len(n) > 1 && attribute.Type == schema.ComplexType {
+			for _, subAttribute := range attribute.SubAttributes {
+				neverEmpty(n[1], subAttribute)
+			}
+		} else {
+			attribute.Required = true
+			if attribute.Type == schema.ComplexType {
+				attribute.ForEachAttribute(func(attribute *schema.Attribute) {
+					attribute.Required = true
+				})
+			}
+		}
+	}
+}
+
+func shouldFill(attribute *schema.Attribute) bool {
+	return attribute.Required || attribute.Type == schema.ComplexType
 }
 
 // NumElements sets the minimum and maximum number of elements that will be added.
@@ -90,7 +114,7 @@ func (f *Fuzzer) elementCount() int {
 	return f.minElements + f.r.Intn(f.maxElements-f.minElements+1)
 }
 
-func (f *Fuzzer) fuzzAttribute(resource map[string]interface{}, attribute *Attribute, c fuzz.Continue) {
+func (f *Fuzzer) fuzzAttribute(resource map[string]interface{}, attribute *schema.Attribute, c fuzz.Continue) {
 	if attribute.MultiValued {
 		var elements []interface{}
 		for i := 0; i < f.elementCount(); i++ {
@@ -105,7 +129,7 @@ func (f *Fuzzer) fuzzAttribute(resource map[string]interface{}, attribute *Attri
 		return
 	}
 
-	if attribute.shouldFill() || f.shouldFill() {
+	if shouldFill(attribute) || f.shouldFill() {
 		value := f.fuzzSingleAttribute(attribute, c)
 		if value != nil {
 			resource[attribute.Name] = f.fuzzSingleAttribute(attribute, c)
@@ -113,9 +137,9 @@ func (f *Fuzzer) fuzzAttribute(resource map[string]interface{}, attribute *Attri
 	}
 }
 
-func (f *Fuzzer) fuzzSingleAttribute(attribute *Attribute, c fuzz.Continue) interface{} {
+func (f *Fuzzer) fuzzSingleAttribute(attribute *schema.Attribute, c fuzz.Continue) interface{} {
 	switch attribute.Type {
-	case StringType, ReferenceType:
+	case schema.StringType, schema.ReferenceType:
 		var randString string
 		if len(attribute.CanonicalValues) == 0 {
 			randString = randAlphaString(c.Rand, 10)
@@ -123,24 +147,24 @@ func (f *Fuzzer) fuzzSingleAttribute(attribute *Attribute, c fuzz.Continue) inte
 			randString = randStringFromSlice(c.Rand, attribute.CanonicalValues)
 		}
 		return randString
-	case BooleanType:
+	case schema.BooleanType:
 		randBool := c.RandBool()
 		return randBool
-	case BinaryType:
+	case schema.BinaryType:
 		randBase64String := base64.StdEncoding.EncodeToString([]byte(randAlphaString(c.Rand, 10)))
 		return randBase64String
-	case DecimalType:
+	case schema.DecimalType:
 		var randFloat64 float64
 		c.Fuzz(&randFloat64)
 		return randFloat64
-	case IntegerType:
+	case schema.IntegerType:
 		var randInt int
 		c.Fuzz(&randInt)
 		return randInt
-	case DateTimeType:
+	case schema.DateTimeType:
 		randDateTimeString := randDateTime()
 		return randDateTimeString
-	case ComplexType:
+	case schema.ComplexType:
 		complexResource := make(map[string]interface{})
 		for _, subAttribute := range attribute.SubAttributes {
 			f.fuzzAttribute(complexResource, subAttribute, c)

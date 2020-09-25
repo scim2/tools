@@ -2,13 +2,14 @@ package fuzz
 
 import (
 	"encoding/json"
+	schema2 "github.com/scim2/tools/schema"
 	"testing"
 
 	"github.com/elimity-com/scim/schema"
 )
 
 func TestReferenceSchemaNeverEmpty(t *testing.T) {
-	var s ReferenceSchema
+	var s schema2.ReferenceSchema
 	raw, _ := schema.CoreUserSchema().MarshalJSON()
 	_ = json.Unmarshal(raw, &s)
 

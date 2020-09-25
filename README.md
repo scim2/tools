@@ -56,3 +56,7 @@ resource, _ := Marshal(resourceStruct)
 
 ## Struct Generator
 Converts a schema to a structure representing the resource described in that schema.
+
+```shell script
+go run main.go -p="path/to/schema.json" -o="pkg/test.go" -pkg="main"
+```

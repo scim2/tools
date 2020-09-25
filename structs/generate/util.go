@@ -1,6 +1,18 @@
 package gen
 
-import "strings"
+import (
+	"log"
+	"regexp"
+	"strings"
+)
+
+func keepAlpha(s string) string {
+	reg, err := regexp.Compile("[^a-zA-Z0-9]+")
+	if err != nil {
+		log.Fatal(err)
+	}
+	return reg.ReplaceAllString(s, "")
+}
 
 // cap capitalizes every word and removes the spaces.
 func cap(s string) string {
@@ -13,18 +25,18 @@ func comment(s string) string {
 	return "// " + strings.Replace(s, "\n", "\n// ", -1)
 }
 
-// wrap splits the given strings in lines of maximum 120 characters.
-func wrap(s string) string {
+// wrap splits the given strings in lines of maximum lw characters.
+func wrap(s string, lw int) string {
 	var wrapped string
 	for _, line := range strings.Split(s, "\n") {
-		if len(line) <= 120 {
+		if len(line) <= lw {
 			wrapped += line
 			continue
 		}
 
 		var wrappedLine string
 		for _, word := range strings.Split(line, " ") {
-			if len(wrappedLine)+len(word) <= 120 {
+			if len(wrappedLine)+len(word) <= lw {
 				if wrappedLine != "" {
 					wrappedLine += " "
 				}
