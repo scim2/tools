@@ -27,6 +27,11 @@ func (w *genWriter) w(p string) error {
 	return err
 }
 
+func (w *genWriter) n() error {
+	_, err := w.Write([]byte("\n"))
+	return err
+}
+
 func (w *genWriter) ln(p string) error {
 	_, err := w.Write([]byte(p + "\n"))
 	return err
@@ -40,7 +45,12 @@ func (w *genWriter) lnf(format string, args ...interface{}) error {
 	return w.ln(fmt.Sprintf(format, args...))
 }
 
-// Indent adds n spaces as a prefix.
+// sp add n spaces
+func (w *genWriter) sp(n int) error {
+	return w.w(strings.Repeat(" ", n))
+}
+
+// in adds n spaces as before the prefix.
 func (w *genWriter) in(n int) *genWriter {
 	return &genWriter{
 		writer: w,
