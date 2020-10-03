@@ -5,8 +5,8 @@ github.com/di-wu/xsd-datetime v0.0.0-20190813080539-55a8ba70aa69/go.mod h1:i3iEh
 github.com/elimity-com/scim v0.0.0-20200921123204-62729912428c h1:bUfuK044tusE8Yl1oeymsR88LLhxlTshw9/dP1FvzKY=
 github.com/elimity-com/scim v0.0.0-20200921123204-62729912428c/go.mod h1:Dp335DumH7sARlmiM2Gubbr4cWi5GrPIaL0i0H92yic=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/scim2/tools/schema v0.0.0-20201003104258-0e42ee35c863 h1:beQjKXpuYcBw+xKsnxE9iM8zn6OiDhZyyQb9VOPBsBQ=
-github.com/scim2/tools/schema v0.0.0-20201003104258-0e42ee35c863/go.mod h1:40hRS0VkXo6o+PusU1B78y/RthyJhRPnjmPpLcF/6as=
+github.com/scim2/tools/schema v0.0.0-20201003164346-398b501f3863 h1:UNKPErLZ4u4g5xrnl+ooaEC5EFtRJyEBLaLvVkSe2A0=
+github.com/scim2/tools/schema v0.0.0-20201003164346-398b501f3863/go.mod h1:40hRS0VkXo6o+PusU1B78y/RthyJhRPnjmPpLcF/6as=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.6.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
