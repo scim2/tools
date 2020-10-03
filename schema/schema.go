@@ -1,5 +1,69 @@
 package schema
 
+var (
+	SchemasAttribute = &Attribute{
+		MultiValued: true,
+		Mutability:  Immutable,
+		Name:        "schemas",
+		Required:    true,
+	}
+	IDAttribute = &Attribute{
+		CaseExact:   true,
+		Description: "A unique identifier for a SCIM resource as defined by the service provider.",
+		Mutability:  ReadOnly,
+		Name:        "id",
+		Required:    true,
+		Returned:    Always,
+		Uniqueness:  Server,
+	}
+	ExternalIDAttribute = &Attribute{
+		CaseExact:   true,
+		Description: "A String that is an identifier for the resource as defined by the\nprovisioning client.",
+		Name:        "externalId",
+	}
+	MetaAttribute = &Attribute{
+		Description: "A complex attribute containing resource metadata.",
+		Mutability:  ReadOnly,
+		Name:        "meta",
+		SubAttributes: []*Attribute{
+			{
+				CaseExact:   true,
+				Description: "The name of the resource type of the resource.",
+				Mutability:  ReadOnly,
+				Name:        "resourceType",
+			},
+			{
+				Description: "The DateTime that the resource was added to the service provider.",
+				Mutability:  ReadOnly,
+				Name:        "created",
+			},
+			{
+				Description: "The most recent DateTime that the details of this resource were updated at the service provider.",
+				Mutability:  ReadOnly,
+				Name:        "lastModified",
+			},
+			{
+				Description: "The URI of the resource being returned.",
+				Mutability:  ReadOnly,
+				Name:        "location",
+			},
+			{
+				CaseExact:   true,
+				Description: "The version of the resource being returned.",
+				Mutability:  ReadOnly,
+				Name:        "version",
+			},
+		},
+	}
+
+	CoreAttributes = []*Attribute{
+		SchemasAttribute,
+		IDAttribute,
+		ExternalIDAttribute,
+		MetaAttribute,
+	}
+)
+
 // Attribute represents an attribute of a ReferenceSchema.
 type Attribute struct {
 	Name            string       `json:"name"`
