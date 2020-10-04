@@ -5,6 +5,7 @@ var (
 		MultiValued: true,
 		Mutability:  Immutable,
 		Name:        "schemas",
+		Type:        StringType,
 		Required:    true,
 	}
 	IDAttribute = &Attribute{
@@ -12,6 +13,7 @@ var (
 		Description: "A unique identifier for a SCIM resource as defined by the service provider.",
 		Mutability:  ReadOnly,
 		Name:        "id",
+		Type:        StringType,
 		Required:    true,
 		Returned:    Always,
 		Uniqueness:  Server,
@@ -20,11 +22,13 @@ var (
 		CaseExact:   true,
 		Description: "A String that is an identifier for the resource as defined by the\nprovisioning client.",
 		Name:        "externalId",
+		Type:        StringType,
 	}
 	MetaAttribute = &Attribute{
 		Description: "A complex attribute containing resource metadata.",
 		Mutability:  ReadOnly,
 		Name:        "meta",
+		Type:        ComplexType,
 		SubAttributes: []*Attribute{
 			{
 				CaseExact:   true,
