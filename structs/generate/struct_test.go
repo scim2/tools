@@ -58,9 +58,8 @@ func ExampleStructGenerator_CustomTypes() {
 			TypeName:  "UUID",
 		},
 		{
-			PkgPrefix: "custom",
-			AttrName:  "meta",
-			TypeName:  "Meta",
+			AttrName: "meta",
+			TypeName: "Meta",
 		},
 	})
 	fmt.Print(g.Generate())
@@ -69,7 +68,7 @@ func ExampleStructGenerator_CustomTypes() {
 	// type User struct {
 	//     ExternalId string
 	//     Id         uuid.UUID
-	//     Meta       custom.Meta
+	//     Meta       Meta
 	// }
 }
 

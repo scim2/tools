@@ -159,7 +159,11 @@ func (g *StructGenerator) generateStructFields(name string, attrs []*schema.Attr
 		}
 
 		if t, custom := g.customTypes[attr.Name]; custom {
-			typ = fmt.Sprintf("%s.%s", t.PkgPrefix, t.TypeName)
+			if t.PkgPrefix != "" {
+				typ = fmt.Sprintf("%s.%s", t.PkgPrefix, t.TypeName)
+			} else {
+				typ = t.TypeName
+			}
 		}
 
 		if g.addTags != nil {
