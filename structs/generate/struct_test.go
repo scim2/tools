@@ -14,6 +14,37 @@ func TestGenerateStruct(t *testing.T) {
 		t.Error("error expected, got none")
 	}
 }
+
+func ExampleStructGenerator_AddTags() {
+	g, _ := gen.NewStructGenerator(schema.ReferenceSchema{
+		Name:        "User",
+		Description: "User Account",
+	})
+	g.AddTags(func(a *schema.Attribute) (tags map[string]string) {
+		tags = make(map[string]string)
+		if a.Required {
+			tags["x"] = "required"
+		}
+		if a.Uniqueness == schema.Server {
+			x, ok := tags["x"]
+			if !ok {
+				tags["x"] = "unique"
+			} else {
+				tags["x"] = x + ",unique"
+			}
+		}
+		return tags
+	})
+	fmt.Print(g.Generate())
+
+	// Output:
+	// // User Account
+	// type User struct {
+	//     ExternalId string
+	//     Id         string `x:"required,unique"`
+	// }
+}
+
 func ExampleStructGenerator_Generate_empty() {
 	g, _ := gen.NewStructGenerator(schema.ReferenceSchema{
 		Name:        "User",
@@ -62,7 +93,7 @@ func ExampleStructGenerator_Generate_user() {
 	// // User Account
 	// type User struct {
 	//     Active            *bool
-	//     Addresses         []UserAddresse
+	//     Addresses         []UserAddress
 	//     DisplayName       *string
 	//     Emails            []UserEmail
 	//     Entitlements      []UserEntitlement
@@ -85,10 +116,10 @@ func ExampleStructGenerator_Generate_user() {
 	//     UserType          *string
 	//     X509Certificates  []UserX509Certificate
 	// }
-	// 
+	//
 	// // A physical mailing address for this User. Canonical type values of 'work', 'home', and 'other'. This attribute is a
 	// // type with the following sub-attributes.
-	// type UserAddresse struct {
+	// type UserAddress struct {
 	//     Formatted     *string
 	//     StreetAddress *string
 	//     Locality      *string
@@ -97,7 +128,7 @@ func ExampleStructGenerator_Generate_user() {
 	//     Country       *string
 	//     Type          *string
 	// }
-	// 
+	//
 	// // Email addresses for the user. The value SHOULD be canonicalized by the service provider, e.g., 'bjensen@example.com'
 	// // of 'bjensen@EXAMPLE.COM'. Canonical type values of 'work', 'home', and 'other'.
 	// type UserEmail struct {
@@ -106,7 +137,7 @@ func ExampleStructGenerator_Generate_user() {
 	//     Type    *string
 	//     Primary *bool
 	// }
-	// 
+	//
 	// // A list of entitlements for the User that represent a thing the User has.
 	// type UserEntitlement struct {
 	//     Value   *string
@@ -114,7 +145,7 @@ func ExampleStructGenerator_Generate_user() {
 	//     Type    *string
 	//     Primary *bool
 	// }
-	// 
+	//
 	// // A list of groups to which the user belongs, either through direct membership, through nested groups, or dynamically
 	// type UserGroup struct {
 	//     Value   *string
@@ -122,7 +153,7 @@ func ExampleStructGenerator_Generate_user() {
 	//     Display *string
 	//     Type    *string
 	// }
-	// 
+	//
 	// // Instant messaging addresses for the User.
 	// type UserIm struct {
 	//     Value   *string
@@ -130,7 +161,7 @@ func ExampleStructGenerator_Generate_user() {
 	//     Type    *string
 	//     Primary *bool
 	// }
-	// 
+	//
 	// // The components of the user's real name. Providers MAY return just the full name as a single string in the formatted
 	// // or they MAY return just the individual component attributes using the other sub-attributes, or they MAY return both.
 	// // both variants are returned, they SHOULD be describing the same name, with the formatted name indicating how the
@@ -143,7 +174,7 @@ func ExampleStructGenerator_Generate_user() {
 	//     HonorificPrefix *string
 	//     HonorificSuffix *string
 	// }
-	// 
+	//
 	// // Phone numbers for the User. The value SHOULD be canonicalized by the service provider according to the format
 	// // in RFC 3966, e.g., 'tel:+1-201-555-0123'. Canonical type values of 'work', 'home', 'mobile', 'fax', 'pager', and
 	// type UserPhoneNumber struct {
@@ -152,7 +183,7 @@ func ExampleStructGenerator_Generate_user() {
 	//     Type    *string
 	//     Primary *bool
 	// }
-	// 
+	//
 	// // URLs of photos of the User.
 	// type UserPhoto struct {
 	//     Value   *string
@@ -160,7 +191,7 @@ func ExampleStructGenerator_Generate_user() {
 	//     Type    *string
 	//     Primary *bool
 	// }
-	// 
+	//
 	// // A list of roles for the User that collectively represent who the User is, e.g., 'Student', 'Faculty'.
 	// type UserRole struct {
 	//     Value   *string
@@ -168,7 +199,7 @@ func ExampleStructGenerator_Generate_user() {
 	//     Type    *string
 	//     Primary *bool
 	// }
-	// 
+	//
 	// // A list of certificates issued to the User.
 	// type UserX509Certificate struct {
 	//     Value   *string
