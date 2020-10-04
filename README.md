@@ -57,6 +57,23 @@ resource, _ := Marshal(resourceStruct)
 ## Struct Generator
 Converts a schema to a structure representing the resource described in that schema.
 
-```shell script
-go run main.go -p="path/to/schema.json" -o="pkg/test.go" -pkg="main"
+```go
+g, _ := gen.NewStructGenerator(schema.ReferenceSchema{
+	Name: "User",
+	Attributes: []*schema.Attribute{
+		{
+			Name:       "userName",
+			Required:   true,
+			Uniqueness: schema.Server,
+		},
+	},
+})
+fmt.Print(g.Generate())
+
+// Output:
+// type User struct {
+//     ExternalId string
+//     Id         string
+//     UserName   string
+// }
 ```
