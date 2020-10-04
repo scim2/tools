@@ -45,6 +45,34 @@ func ExampleStructGenerator_AddTags() {
 	// }
 }
 
+func ExampleStructGenerator_CustomTypes() {
+	ref := schema.ReferenceSchema{
+		Name:       "User",
+		Attributes: []*schema.Attribute{schema.MetaAttribute},
+	}
+	g, _ := gen.NewStructGenerator(ref)
+	g.CustomTypes([]gen.CustomType{
+		{
+			PkgPrefix: "uuid",
+			AttrName:  "id",
+			TypeName:  "UUID",
+		},
+		{
+			PkgPrefix: "custom",
+			AttrName:  "meta",
+			TypeName:  "Meta",
+		},
+	})
+	fmt.Print(g.Generate())
+
+	// Output:
+	// type User struct {
+	//     ExternalId string
+	//     Id         uuid.UUID
+	//     Meta       custom.Meta
+	// }
+}
+
 func ExampleStructGenerator_Generate_empty() {
 	g, _ := gen.NewStructGenerator(schema.ReferenceSchema{
 		Name:        "User",

@@ -14,6 +14,16 @@ func keepAlpha(s string) string {
 	return reg.ReplaceAllString(s, "")
 }
 
+func singular(s string) string {
+	if strings.HasSuffix(s, "ses") {
+		return strings.TrimSuffix(s, "es")
+	}
+	if strings.HasSuffix(s, "s") {
+		return strings.TrimSuffix(s, "s")
+	}
+	return s
+}
+
 // cap capitalizes every word and removes the spaces.
 func cap(s string) string {
 	return strings.Replace(strings.Title(s), " ", "", -1)

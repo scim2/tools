@@ -10,11 +10,18 @@ import (
 )
 
 type StructGenerator struct {
-	w   *genWriter
-	s   schema.ReferenceSchema
-	ptr bool
+	w *genWriter
+	s schema.ReferenceSchema
 
-	addTags func(a *schema.Attribute) map[string]string
+	ptr         bool
+	addTags     func(a *schema.Attribute) map[string]string
+	customTypes map[string]CustomType
+}
+
+type CustomType struct {
+	PkgPrefix string // package id
+	AttrName  string // name of the attribute
+	TypeName  string // name of the custom type
 }
 
 func NewStructGenerator(s schema.ReferenceSchema) (StructGenerator, error) {
@@ -44,8 +51,9 @@ func NewStructGenerator(s schema.ReferenceSchema) (StructGenerator, error) {
 	})
 
 	return StructGenerator{
-		w: newGenWriter(&bytes.Buffer{}),
-		s: s,
+		w:           newGenWriter(&bytes.Buffer{}),
+		s:           s,
+		customTypes: map[string]CustomType{},
 	}, nil
 }
 
@@ -58,6 +66,18 @@ func (g *StructGenerator) UsePtr(t bool) *StructGenerator {
 // AddTags enables setting fields tags when the attribute is has certain attribute fields such as required.
 func (g *StructGenerator) AddTags(f func(a *schema.Attribute) (tags map[string]string)) *StructGenerator {
 	g.addTags = f
+	return g
+}
+
+// CustomTypes allows defining custom types for an attribute.
+func (g *StructGenerator) CustomTypes(types []CustomType) *StructGenerator {
+	if len(types) == 0 {
+		return g
+	}
+	g.customTypes = make(map[string]CustomType)
+	for _, t := range types {
+		g.customTypes[t.AttrName] = t
+	}
 	return g
 }
 
@@ -86,14 +106,11 @@ func (g *StructGenerator) generateStruct(name, desc string, attrs []*schema.Attr
 	w.ln("}")
 
 	for _, attr := range attrs {
-		if attr.Type == schema.ComplexType {
+		_, custom := g.customTypes[attr.Name]
+		if attr.Type == schema.ComplexType && !custom {
 			typ := cap(attr.Name)
 			if attr.MultiValued {
-				if strings.HasSuffix(typ, "ses") {
-					typ = strings.TrimSuffix(typ, "es")
-				} else if strings.HasSuffix(typ, "s") {
-					typ = strings.TrimSuffix(typ, "s")
-				}
+				typ = singular(typ)
 			}
 			w.n()
 			g.generateStruct(name+typ, attr.Description, attr.SubAttributes)
@@ -136,13 +153,13 @@ func (g *StructGenerator) generateStructFields(name string, attrs []*schema.Attr
 
 		if attr.MultiValued {
 			w.w("[]")
-			if strings.HasSuffix(typ, "ses") {
-				typ = strings.TrimSuffix(typ, "es")
-			} else if strings.HasSuffix(typ, "s") {
-				typ = strings.TrimSuffix(typ, "s")
-			}
+			typ = singular(typ)
 		} else if !attr.Required && g.ptr {
 			w.w("*")
+		}
+
+		if t, custom := g.customTypes[attr.Name]; custom {
+			typ = fmt.Sprintf("%s.%s", t.PkgPrefix, t.TypeName)
 		}
 
 		if g.addTags != nil {
