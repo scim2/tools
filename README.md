@@ -54,6 +54,26 @@ resource, _ := Marshal(resourceStruct)
 // OUTPUT: map[name:map[familyName:Daenen givenName:Quint] userName:di-wu]
 ```
 
+## Decoder
+A simple decoder that fills structs with maps.
+
+**!** no pointers and tags supported
+
+```go
+resourceMap := structs.Resource{
+	"userName": "di-wu",
+	"name": structs.Resource{
+		"firstName": "Quint",
+		"lastName":  "Daenen",
+	},
+}
+
+var resource ResourceStruct
+_ = Unmarshal(resourceMap, &resource)
+
+// OUTPUT: {di-wu {Quint Daenen}}
+```
+
 ## Struct Generator
 Converts a schema to a structure representing the resource described in that schema.
 
