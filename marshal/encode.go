@@ -91,8 +91,7 @@ func structEncoderComplexMultiValued(resource structs.Resource, field reflect.Va
 				return err
 			}
 			resource.EnsureComplexMultiValuedAttribute(tag.name, 0)
-			if err := resource.AppendComplexMultiValuedAttribute(tag.name, value)
-				err != nil {
+			if err := resource.AppendComplexMultiValuedAttribute(tag.name, value); err != nil {
 				return err
 			}
 		}

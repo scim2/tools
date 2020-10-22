@@ -37,6 +37,9 @@ func Unmarshal(data structs.Resource, value interface{}) error {
 			f := t.Field(i)
 			name := lowerFirstRune(f.Name)
 			if fV, ok := data[name]; ok {
+				if fV == nil {
+					continue
+				}
 				s := reflect.ValueOf(fV)
 				switch t := fV.(type) {
 				case []interface{}:

@@ -27,9 +27,9 @@ func ExampleUnmarshal() {
 }
 
 type testUnmarshal struct {
-	Name    string
-	NamePtr *string
-	Last    struct {
+	Name string
+	Nil  interface{}
+	Last struct {
 		Name string
 	}
 	NickNames []struct {
@@ -39,7 +39,8 @@ type testUnmarshal struct {
 
 func TestUnmarshal(t *testing.T) {
 	s := structs.Resource{
-		"name":    "Quint",
+		"name": "Quint",
+		"nil":  nil,
 		"last": structs.Resource{
 			"name": "Daenen",
 		},
