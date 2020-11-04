@@ -2,7 +2,6 @@ package marshal
 
 import (
 	"fmt"
-	"github.com/scim2/tools/structs"
 	"testing"
 )
 
@@ -20,7 +19,7 @@ func TestComplex(t *testing.T) {
 		Slice   []interface{}          `scim:"complex.slice"`
 		String  string                 `scim:"complex.string"`
 		Struct  structPtrString        `scim:"complex.struct"`
-		Structs []structPtrString      `scim:"complex.structs"`
+		Structs []structPtrString      `scim:"complex.generate"`
 	}
 
 	str := "_"
@@ -37,14 +36,14 @@ func TestComplex(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		ref := structs.Resource{
-			"complex": structs.Resource{
+		ref := map[string]interface{}{
+			"complex": map[string]interface{}{
 				"bool":   true,
 				"int":    1,
-				"map":    structs.Resource{str: str},
+				"map":    map[string]interface{}{str: str},
 				"ptr":    str,
 				"string": str,
-				"struct": structs.Resource{"ptr": str},
+				"struct": map[string]interface{}{"ptr": str},
 			},
 		}
 		if fmt.Sprintf("%#v", resource) != fmt.Sprintf("%#v", ref) {
@@ -95,7 +94,7 @@ func TestComplexMultiValued(t *testing.T) {
 		Slice   []interface{}          `scim:"complexMV5.slice,mV,_mV"`
 		String  string                 `scim:"complex.string,_mV"`
 		Struct  structPtrString        `scim:"complex.struct,_mV"`
-		Structs []structPtrString      `scim:"complexMV8.structs,mV,_mV"`
+		Structs []structPtrString      `scim:"complexMV8.generate,mV,_mV"`
 	}
 
 	str := "_"
@@ -114,20 +113,20 @@ func TestComplexMultiValued(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	ref := structs.Resource{
-		"complex": structs.Resource{
+	ref := map[string]interface{}{
+		"complex": map[string]interface{}{
 			"ptr":    str,
 			"string": str,
-			"struct": structs.Resource{"ptr": []interface{}{str}},
+			"struct": map[string]interface{}{"ptr": []interface{}{str}},
 		},
-		"complexMV":  []structs.Resource{{"bool": []interface{}{true}}},
-		"complexMV1": []structs.Resource{{"int": 1}},
-		"complexMV2": []structs.Resource{{"array": str}, {"array": str}},
-		"complexMV3": []structs.Resource{{"map": structs.Resource{str: str}}},
-		"complexMV5": []structs.Resource{{"slice": []interface{}{str}}},
-		"complexMV8": []structs.Resource{
-			{"structs": []structs.Resource{{"ptr": []interface{}{str}}}},
-			{"structs": []structs.Resource{{"ptr": []interface{}{str}}}},
+		"complexMV":  []map[string]interface{}{{"bool": []interface{}{true}}},
+		"complexMV1": []map[string]interface{}{{"int": 1}},
+		"complexMV2": []map[string]interface{}{{"array": str}, {"array": str}},
+		"complexMV3": []map[string]interface{}{{"map": map[string]interface{}{str: str}}},
+		"complexMV5": []map[string]interface{}{{"slice": []interface{}{str}}},
+		"complexMV8": []map[string]interface{}{
+			{"generate": []map[string]interface{}{{"ptr": []interface{}{str}}}},
+			{"generate": []map[string]interface{}{{"ptr": []interface{}{str}}}},
 		},
 	}
 	if fmt.Sprintf("%#v", resource) != fmt.Sprintf("%#v", ref) {
@@ -167,13 +166,13 @@ func TestSimple(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		ref := structs.Resource{
+		ref := map[string]interface{}{
 			"bool":   true,
 			"int":    1,
-			"map":    structs.Resource{str: str},
+			"map":    map[string]interface{}{str: str},
 			"ptr":    str,
 			"string": str,
-			"struct": structs.Resource{"ptr": str},
+			"struct": map[string]interface{}{"ptr": str},
 		}
 		if fmt.Sprintf("%#v", resource) != fmt.Sprintf("%#v", ref) {
 			t.Error(fmt.Sprintf("\n%#v", resource), fmt.Sprintf("\n%#v", ref))
@@ -291,16 +290,16 @@ func TestSimpleMultiValued(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	ref := structs.Resource{
+	ref := map[string]interface{}{
 		"bool":    []interface{}{true},
 		"int":     []interface{}{1},
 		"array":   []interface{}{str},
-		"map":     []structs.Resource{{str: str}},
+		"map":     []map[string]interface{}{{str: str}},
 		"ptr":     []interface{}{str},
 		"slice":   []interface{}{str, str},
 		"string":  []interface{}{str},
-		"struct":  []structs.Resource{{"ptr": []interface{}{str}}},
-		"structs": []structs.Resource{{"ptr": []interface{}{str}}, {"ptr": []interface{}{str}}},
+		"struct":  []map[string]interface{}{{"ptr": []interface{}{str}}},
+		"structs": []map[string]interface{}{{"ptr": []interface{}{str}}, {"ptr": []interface{}{str}}},
 	}
 	if fmt.Sprintf("%#v", resource) != fmt.Sprintf("%#v", ref) {
 		t.Error(fmt.Sprintf("\n%#v", resource), fmt.Sprintf("\n%#v", ref))

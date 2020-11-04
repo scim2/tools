@@ -2,7 +2,6 @@ package marshal
 
 import (
 	"fmt"
-	"github.com/scim2/tools/structs"
 	"testing"
 )
 
@@ -10,14 +9,14 @@ type testUnmarshalInterface struct {
 	Name string
 }
 
-func (t *testUnmarshalInterface) UnmarshalSCIM(resource structs.Resource) error {
+func (t *testUnmarshalInterface) UnmarshalSCIM(resource map[string]interface{}) error {
 	t.Name = resource["name"].(string)
 	return nil
 }
 
 func ExampleUnmarshal() {
 	var r testUnmarshalInterface
-	_ = Unmarshal(structs.Resource{
+	_ = Unmarshal(map[string]interface{}{
 		"name": "Quint",
 	}, &r)
 	fmt.Println(r)
@@ -38,17 +37,17 @@ type testUnmarshal struct {
 }
 
 func TestUnmarshal(t *testing.T) {
-	s := structs.Resource{
+	s := map[string]interface{}{
 		"name": "Quint",
 		"nil":  nil,
-		"last": structs.Resource{
+		"last": map[string]interface{}{
 			"name": "Daenen",
 		},
 		"nickNames": []interface{}{
-			structs.Resource{
+			map[string]interface{}{
 				"name": "quint",
 			},
-			structs.Resource{
+			map[string]interface{}{
 				"name": "di-wu",
 			},
 		},
@@ -94,9 +93,9 @@ func Example() {
 	r, _ := Marshal(resourceStruct)
 	fmt.Println(r)
 
-	resourceMap := structs.Resource{
+	resourceMap := map[string]interface{}{
 		"userName": "di-wu",
-		"name": structs.Resource{
+		"name": map[string]interface{}{
 			"firstName": "Quint",
 			"lastName":  "Daenen",
 		},

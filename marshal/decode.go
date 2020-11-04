@@ -3,13 +3,12 @@ package marshal
 import (
 	"errors"
 	"fmt"
-	"github.com/scim2/tools/structs"
 	"reflect"
 )
 
 var unmarshalerType = reflect.TypeOf((*Unmarshaler)(nil)).Elem()
 
-func Unmarshal(data structs.Resource, value interface{}) error {
+func Unmarshal(data map[string]interface{}, value interface{}) error {
 	v := reflect.ValueOf(value)
 	if v.Kind() != reflect.Ptr || v.IsNil() {
 		return errors.New("value is invalid")
@@ -49,7 +48,7 @@ func Unmarshal(data structs.Resource, value interface{}) error {
 					field := reflect.MakeSlice(v.Type(), len(t), len(t))
 					for i, v := range t {
 						switch t := v.(type) {
-						case structs.Resource:
+						case map[string]interface{}:
 							typ := field.Index(i).Type()
 							element := reflect.New(typ)
 							initializeStruct(typ, element.Elem())
@@ -63,7 +62,7 @@ func Unmarshal(data structs.Resource, value interface{}) error {
 					}
 					v.Set(field)
 					continue
-				case structs.Resource:
+				case map[string]interface{}:
 					field := reflect.New(v.Type())
 					initializeStruct(v.Type(), field.Elem())
 					if err := Unmarshal(t, field.Interface()); err != nil {
@@ -87,7 +86,7 @@ func Unmarshal(data structs.Resource, value interface{}) error {
 
 // Unmarshaler is the interface implemented by types that can unmarshal a SCIM description of themselves.
 type Unmarshaler interface {
-	UnmarshalSCIM(structs.Resource) error
+	UnmarshalSCIM(map[string]interface{}) error
 }
 
 func initializeStruct(t reflect.Type, v reflect.Value) {

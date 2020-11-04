@@ -3,13 +3,14 @@ package marshal
 import (
 	"errors"
 	"fmt"
-	"github.com/scim2/tools/structs"
 	"reflect"
+
+	. "github.com/scim2/tools/attributes"
 )
 
 var marshalerType = reflect.TypeOf((*Marshaler)(nil)).Elem()
 
-func Marshal(value interface{}) (structs.Resource, error) {
+func Marshal(value interface{}) (map[string]interface{}, error) {
 	v := reflect.ValueOf(value)
 	if !v.IsValid() {
 		return nil, errors.New("value is invalid")
@@ -37,7 +38,7 @@ func Marshal(value interface{}) (structs.Resource, error) {
 		ptr := v.Elem()
 		return Marshal(ptr.Elem().Interface())
 	case reflect.Struct:
-		resource := make(structs.Resource)
+		resource := make(map[string]interface{})
 
 		t := v.Type()
 		for i := 0; i < v.NumField(); i++ {
@@ -60,7 +61,7 @@ func Marshal(value interface{}) (structs.Resource, error) {
 	}
 }
 
-func structEncoder(resource structs.Resource, field reflect.Value, tag tag) error {
+func structEncoder(resource map[string]interface{}, field reflect.Value, tag tag) error {
 	if tag.sub == nil {
 		if tag.multiValued {
 			return structEncoderSimpleMultiValued(resource, field, tag)
@@ -74,43 +75,43 @@ func structEncoder(resource structs.Resource, field reflect.Value, tag tag) erro
 	}
 }
 
-func structEncoderComplex(resource structs.Resource, field reflect.Value, tag tag) error {
-	subResource := resource.EnsureComplexAttribute(tag.name)
-	if subResource.Exists(tag.sub.name) {
+func structEncoderComplex(resource map[string]interface{}, field reflect.Value, tag tag) error {
+	subResource := EnsureComplexAttribute(resource, tag.name)
+	if Exists(subResource, tag.sub.name) {
 		return errors.New(fmt.Sprintf("duplicate names: %s", tag.sub.name))
 	}
 	return structEncoderSimple(subResource, field, *tag.sub)
 }
 
-func structEncoderComplexMultiValued(resource structs.Resource, field reflect.Value, tag tag) error {
+func structEncoderComplexMultiValued(resource map[string]interface{}, field reflect.Value, tag tag) error {
 	switch field.Kind() {
 	case reflect.Array, reflect.Slice:
 		for i := 0; i < field.Len(); i++ {
-			value := make(structs.Resource)
+			value := make(map[string]interface{})
 			if err := structEncoder(value, field.Index(i), *tag.sub); err != nil {
 				return err
 			}
-			resource.EnsureComplexMultiValuedAttribute(tag.name, 0)
-			if err := resource.AppendComplexMultiValuedAttribute(tag.name, value); err != nil {
+			EnsureComplexMultiValuedAttribute(resource, tag.name, 0)
+			if err := AppendComplexMultiValuedAttribute(resource, tag.name, value); err != nil {
 				return err
 			}
 		}
 	case reflect.Ptr, reflect.Interface:
 		return structEncoderComplexMultiValued(resource, field.Elem(), tag)
 	default:
-		value := make(structs.Resource)
+		value := make(map[string]interface{})
 		if err := structEncoder(value, field, *tag.sub); err != nil {
 			return err
 		}
-		resource.EnsureComplexMultiValuedAttribute(tag.name, tag.max())
-		if err := resource.AppendComplexMultiValuedAttribute(tag.name, value); err != nil {
+		EnsureComplexMultiValuedAttribute(resource, tag.name, tag.max())
+		if err := AppendComplexMultiValuedAttribute(resource, tag.name, value); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func structEncoderSimple(resource structs.Resource, field reflect.Value, tag tag) error {
+func structEncoderSimple(resource map[string]interface{}, field reflect.Value, tag tag) error {
 	// Ignore invalid fields.
 	if !field.IsValid() {
 		return nil
@@ -124,7 +125,7 @@ func structEncoderSimple(resource structs.Resource, field reflect.Value, tag tag
 			return errors.New("key of map is not a string")
 		}
 
-		mapField, err := resource.AddEmptyComplexAttribute(tag.name)
+		mapField, err := AddEmptyComplexAttribute(resource, tag.name)
 		if err != nil {
 			return err
 		}
@@ -142,14 +143,14 @@ func structEncoderSimple(resource structs.Resource, field reflect.Value, tag tag
 			if err != nil {
 				return err
 			}
-			if err := mapField.Add(k.String(), fieldInterface); err != nil {
+			if err := Add(mapField, k.String(), fieldInterface); err != nil {
 				return err
 			}
 		}
 	case reflect.Ptr, reflect.Interface:
 		return structEncoderSimple(resource, field.Elem(), tag)
 	case reflect.Struct:
-		fieldStruct := make(structs.Resource)
+		fieldStruct := make(map[string]interface{})
 		t := field.Type()
 		for i := 0; i < field.NumField(); i++ {
 			tagIndex := parseTags(t.Field(i))
@@ -165,13 +166,13 @@ func structEncoderSimple(resource structs.Resource, field reflect.Value, tag tag
 				return err
 			}
 		}
-		if depth := fieldStruct.Depth(); 1 < depth {
+		if depth := Depth(fieldStruct); 1 < depth {
 			return fmt.Errorf("nested depth exceeded: %d", depth)
 		}
 
-		fieldMap := resource.EnsureComplexAttribute(tag.name)
+		fieldMap := EnsureComplexAttribute(resource, tag.name)
 		for k, v := range fieldStruct {
-			if err := fieldMap.Add(k, v); err != nil {
+			if err := Add(fieldMap, k, v); err != nil {
 				return err
 			}
 		}
@@ -183,52 +184,52 @@ func structEncoderSimple(resource structs.Resource, field reflect.Value, tag tag
 		if err != nil {
 			return err
 		}
-		if err := resource.Add(tag.name, fieldInterface); err != nil {
+		if err := Add(resource, tag.name, fieldInterface); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func structEncoderSimpleMultiValued(resource structs.Resource, field reflect.Value, tag tag) error {
+func structEncoderSimpleMultiValued(resource map[string]interface{}, field reflect.Value, tag tag) error {
 	switch field.Kind() {
 	case reflect.Array, reflect.Slice:
 		for i := 0; i < field.Len(); i++ {
-			value := make(structs.Resource)
+			value := make(map[string]interface{})
 			if err := structEncoderSimple(value, field.Index(i), tag); err != nil {
 				return err
 			}
 			for _, v := range value {
 				switch field.Index(i).Kind() {
 				case reflect.Struct:
-					resource.EnsureComplexMultiValuedAttribute(tag.name, tag.max())
-					if err := resource.AppendComplexMultiValuedAttribute(tag.name, v.(structs.Resource)); err != nil {
+					EnsureComplexMultiValuedAttribute(resource, tag.name, tag.max())
+					if err := AppendComplexMultiValuedAttribute(resource, tag.name, v.(map[string]interface{})); err != nil {
 						return err
 					}
 				default:
-					resource.EnsureMultiValuedAttribute(tag.name, tag.max())
-					if err := resource.AppendMultiValuedAttribute(tag.name, v); err != nil {
+					EnsureMultiValuedAttribute(resource, tag.name, tag.max())
+					if err := AppendMultiValuedAttribute(resource, tag.name, v); err != nil {
 						return err
 					}
 				}
 			}
 		}
 	case reflect.Map:
-		resource.EnsureComplexMultiValuedAttribute(tag.name, tag.max())
-		value := make(structs.Resource)
+		EnsureComplexMultiValuedAttribute(resource, tag.name, tag.max())
+		value := make(map[string]interface{})
 		if err := structEncoderSimple(value, field, tag); err != nil {
 			return err
 		}
 		for _, v := range value {
-			if err := resource.AppendComplexMultiValuedAttribute(tag.name, v.(structs.Resource)); err != nil {
+			if err := AppendComplexMultiValuedAttribute(resource, tag.name, v.(map[string]interface{})); err != nil {
 				return err
 			}
 		}
 	case reflect.Ptr, reflect.Interface:
 		return structEncoderSimpleMultiValued(resource, field.Elem(), tag)
 	case reflect.Struct:
-		resource.EnsureComplexMultiValuedAttribute(tag.name, tag.max())
-		fieldStruct := make(structs.Resource)
+		EnsureComplexMultiValuedAttribute(resource, tag.name, tag.max())
+		fieldStruct := make(map[string]interface{})
 		t := field.Type()
 		for i := 0; i < field.NumField(); i++ {
 			tagIndex := parseTags(t.Field(i))
@@ -244,21 +245,21 @@ func structEncoderSimpleMultiValued(resource structs.Resource, field reflect.Val
 				return err
 			}
 		}
-		if depth := fieldStruct.Depth(); 1 < depth {
+		if depth := Depth(fieldStruct); 1 < depth {
 			return fmt.Errorf("nested depth exceeded: %d", depth)
 		}
 
-		if err := resource.AppendComplexMultiValuedAttribute(tag.name, fieldStruct); err != nil {
+		if err := AppendComplexMultiValuedAttribute(resource, tag.name, fieldStruct); err != nil {
 			return err
 		}
 	default:
-		resource.EnsureMultiValuedAttribute(tag.name, tag.max())
-		value := make(structs.Resource)
+		EnsureMultiValuedAttribute(resource, tag.name, tag.max())
+		value := make(map[string]interface{})
 		if err := structEncoderSimple(value, field, tag); err != nil {
 			return err
 		}
 		for _, v := range value {
-			if err := resource.AppendMultiValuedAttribute(tag.name, v); err != nil {
+			if err := AppendMultiValuedAttribute(resource, tag.name, v); err != nil {
 				return err
 			}
 		}
@@ -297,5 +298,5 @@ func validSimpleAttribute(v reflect.Value) (interface{}, error) {
 
 // Marshaler is the interface implemented by types that can marshal themselves into SCIM resources.
 type Marshaler interface {
-	MarshalSCIM() (structs.Resource, error)
+	MarshalSCIM() (map[string]interface{}, error)
 }
