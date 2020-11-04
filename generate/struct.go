@@ -1,12 +1,13 @@
-package gen
+package generate
 
 import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/scim2/tools/schema"
 	"sort"
 	"strings"
+
+	"github.com/scim2/tools/schema"
 )
 
 type StructGenerator struct {

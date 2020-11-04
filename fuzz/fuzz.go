@@ -3,12 +3,12 @@ package fuzz
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/google/gofuzz"
-	"github.com/scim2/tools/schema"
-	"github.com/scim2/tools/structs"
 	"math/rand"
 	"strings"
 	"time"
+
+	"github.com/google/gofuzz"
+	"github.com/scim2/tools/schema"
 )
 
 type Fuzzer struct {
@@ -46,8 +46,8 @@ func (f *Fuzzer) EmptyChance(p float64) *Fuzzer {
 }
 
 // Fuzz recursively fills a Resource based on fields the ReferenceSchema of the Fuzzer.
-func (f *Fuzzer) Fuzz() structs.Resource {
-	var resource structs.Resource
+func (f *Fuzzer) Fuzz() map[string]interface{} {
+	var resource map[string]interface{}
 	f.fuzzer.Funcs(f.newResourceFuzzer()).Fuzz(&resource)
 	return resource
 }
@@ -178,9 +178,9 @@ func (f *Fuzzer) fuzzSingleAttribute(attribute *schema.Attribute, c fuzz.Continu
 	}
 }
 
-func (f *Fuzzer) newResourceFuzzer() func(resource *structs.Resource, c fuzz.Continue) {
-	return func(r *structs.Resource, c fuzz.Continue) {
-		resource := make(structs.Resource)
+func (f *Fuzzer) newResourceFuzzer() func(resource *map[string]interface{}, c fuzz.Continue) {
+	return func(r *map[string]interface{}, c fuzz.Continue) {
+		resource := make(map[string]interface{})
 		for _, attribute := range f.schema.Attributes {
 			f.fuzzAttribute(resource, attribute, c)
 		}

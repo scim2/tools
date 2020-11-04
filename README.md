@@ -60,9 +60,9 @@ A simple decoder that fills structs with maps.
 **!** no pointers and tags supported
 
 ```go
-resourceMap := structs.Resource{
+resourceMap := map[string]interface{}{
 	"userName": "di-wu",
-	"name": structs.Resource{
+	"name": map[string]interface{}{
 		"firstName": "Quint",
 		"lastName":  "Daenen",
 	},

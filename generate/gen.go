@@ -1,5 +1,5 @@
 // Package gen provides generated go structures based on a given SCIM schema.
-package gen
+package generate
 
 import (
 	"fmt"

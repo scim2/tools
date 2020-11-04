@@ -1,4 +1,4 @@
-package structs
+package attributes
 
 import (
 	"fmt"
@@ -6,12 +6,9 @@ import (
 	"strings"
 )
 
-// Resource represents a fuzzed SCIM resource.
-type Resource map[string]interface{}
-
 // Add stores the given key and value, returns an error if the key in use.
-func (resource Resource) Add(key string, value interface{}) error {
-	if err := resource.validKey(key); err != nil {
+func Add(resource map[string]interface{}, key string, value interface{}) error {
+	if err := validKey(resource, key); err != nil {
 		return err
 	}
 
@@ -23,15 +20,15 @@ func (resource Resource) Add(key string, value interface{}) error {
 }
 
 // AddEmptyComplexAttribute creates a new map with given key, returns an error if the key in use.
-func (resource Resource) AddEmptyComplexAttribute(key string) (Resource, error) {
-	if err := resource.validKey(key); err != nil {
+func AddEmptyComplexAttribute(resource map[string]interface{}, key string) (map[string]interface{}, error) {
+	if err := validKey(resource, key); err != nil {
 		return nil, err
 	}
 
-	if err := resource.Add(key, make(Resource)); err != nil {
+	if err := Add(resource, key, make(map[string]interface{})); err != nil {
 		return nil, err
 	}
-	return resource[key].(Resource), nil
+	return resource[key].(map[string]interface{}), nil
 }
 
 // AppendComplexMultiValuedAttribute adds given complex value to the complex multi valued attribute with the given key.
@@ -39,23 +36,23 @@ func (resource Resource) AddEmptyComplexAttribute(key string) (Resource, error) 
 // Returns an error IF:
 // - the slice is not present.
 // - it is not a slice of maps.
-func (resource Resource) AppendComplexMultiValuedAttribute(key string, value Resource) error {
-	if err := resource.validKey(key); err != nil {
+func AppendComplexMultiValuedAttribute(resource map[string]interface{}, key string, value map[string]interface{}) error {
+	if err := validKey(resource, key); err != nil {
 		return err
 	}
 
 	if resourceValue, found := resource[key]; found {
-		if sliceValue, isSlice := resourceValue.([]Resource); isSlice {
+		if sliceValue, isSlice := resourceValue.([]map[string]interface{}); isSlice {
 			for k, e := range value {
 				var filled bool
 				for _, r := range sliceValue {
-					if r.Add(k, e) == nil {
+					if Add(r, k, e) == nil {
 						filled = true
 						break
 					}
 				}
 				if !filled {
-					sliceValue = append(sliceValue, Resource{
+					sliceValue = append(sliceValue, map[string]interface{}{
 						k: e,
 					})
 				}
@@ -74,8 +71,8 @@ func (resource Resource) AppendComplexMultiValuedAttribute(key string, value Res
 // - the slice is not present.
 // - it is not a slice.
 // - the value type does not match the type of the content.
-func (resource Resource) AppendMultiValuedAttribute(key string, value interface{}) error {
-	if err := resource.validKey(key); err != nil {
+func AppendMultiValuedAttribute(resource map[string]interface{}, key string, value interface{}) error {
+	if err := validKey(resource, key); err != nil {
 		return err
 	}
 
@@ -107,18 +104,18 @@ func (resource Resource) AppendMultiValuedAttribute(key string, value interface{
 }
 
 // Depth returns the amount of nested maps.
-func (resource Resource) Depth() int {
+func Depth(resource map[string]interface{}) int {
 	var depth int
 	for _, attribute := range resource {
 		switch attribute := attribute.(type) {
-		case Resource:
-			if d := attribute.Depth(); depth < d {
+		case map[string]interface{}:
+			if d := Depth(attribute); depth < d {
 				depth = d
 			}
 		case []interface{}:
 			for _, v := range attribute {
-				if r, ok := v.(Resource); ok {
-					if d := r.Depth(); depth < d {
+				if r, ok := v.(map[string]interface{}); ok {
+					if d := Depth(r); depth < d {
 						depth = d
 					}
 				}
@@ -131,23 +128,23 @@ func (resource Resource) Depth() int {
 // EnsureComplexAttribute gets the complex attribute based on the given key.
 // IF not present -> it creates an empty map.
 // IF not a map   -> it overwrites it with an empty map.
-func (resource Resource) EnsureComplexAttribute(key string) Resource {
+func EnsureComplexAttribute(resource map[string]interface{}, key string) map[string]interface{} {
 	if value, found := resource[key]; found {
-		if mapValue, isMap := value.(Resource); isMap {
+		if mapValue, isMap := value.(map[string]interface{}); isMap {
 			return mapValue
 		}
 	}
-	resource[key] = make(Resource)
-	return resource[key].(Resource)
+	resource[key] = make(map[string]interface{})
+	return resource[key].(map[string]interface{})
 }
 
 // EnsureComplexMultiValuedAttribute gets the complex multi valued attribute based on the given key.
 // Makes sure the size is at least the given length (by appending empty maps if smaller).
 // IF not present -> it creates an empty slice of empty maps of given length.
 // IF not a slice -> it overwrites it with an empty slice of empty maps of given length.
-func (resource Resource) EnsureComplexMultiValuedAttribute(key string, length int) []Resource {
+func EnsureComplexMultiValuedAttribute(resource map[string]interface{}, key string, length int) []map[string]interface{} {
 	if value, found := resource[key]; found {
-		if sliceValue, isSlice := value.([]Resource); isSlice {
+		if sliceValue, isSlice := value.([]map[string]interface{}); isSlice {
 			for len(sliceValue) <= length {
 				sliceValue = append(sliceValue, nil)
 			}
@@ -156,9 +153,9 @@ func (resource Resource) EnsureComplexMultiValuedAttribute(key string, length in
 			return sliceValue
 		}
 	}
-	resources := make([]Resource, 0)
+	resources := make([]map[string]interface{}, 0)
 	for i := 0; i < length; i++ {
-		resources = append(resources, make(Resource))
+		resources = append(resources, make(map[string]interface{}))
 	}
 	resource[key] = resources
 	return resources
@@ -168,7 +165,7 @@ func (resource Resource) EnsureComplexMultiValuedAttribute(key string, length in
 // Makes sure the size is at least the given length (by appending nil if smaller).
 // IF not present -> it creates an empty slice of given length.
 // IF not a map   -> it overwrites it with an empty slice of given length.
-func (resource Resource) EnsureMultiValuedAttribute(key string, length int) []interface{} {
+func EnsureMultiValuedAttribute(resource map[string]interface{}, key string, length int) []interface{} {
 	if value, found := resource[key]; found {
 		if sliceValue, isSlice := value.([]interface{}); isSlice {
 			for len(sliceValue) <= length {
@@ -182,8 +179,8 @@ func (resource Resource) EnsureMultiValuedAttribute(key string, length int) []in
 }
 
 // Exists checks whether the key exists in the map.
-func (resource Resource) Exists(key string) bool {
-	if resource.validKey(key) != nil {
+func Exists(resource map[string]interface{}, key string) bool {
+	if validKey(resource, key) != nil {
 		return true
 	}
 
@@ -195,7 +192,7 @@ func (resource Resource) Exists(key string) bool {
 // i.e. ("x", "X") -> false
 //		("x", "x") -> true
 //		("x", "y") -> true
-func (resource Resource) validKey(key string) error {
+func validKey(resource map[string]interface{}, key string) error {
 	for k := range resource {
 		if strings.EqualFold(k, key) && k != key {
 			return fmt.Errorf("duplicate keys: %s and %s", k, key)

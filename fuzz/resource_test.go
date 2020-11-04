@@ -1,17 +1,43 @@
 package fuzz
 
 import (
-	"encoding/json"
-	schema2 "github.com/scim2/tools/schema"
 	"testing"
 
-	"github.com/elimity-com/scim/schema"
+	"github.com/scim2/tools/schema"
 )
 
 func TestReferenceSchemaNeverEmpty(t *testing.T) {
-	var s schema2.ReferenceSchema
-	raw, _ := schema.CoreUserSchema().MarshalJSON()
-	_ = json.Unmarshal(raw, &s)
+	s := schema.ReferenceSchema{
+		Attributes: []*schema.Attribute{
+			{
+				Name:     "userName",
+				Type:     schema.StringType,
+				Required: true,
+			},
+			{
+				Name: "displayName",
+				Type: schema.StringType,
+			},
+			{
+				Name: "name",
+				Type: schema.ComplexType,
+				SubAttributes: []*schema.Attribute{
+					{Name: "givenName", Type: schema.StringType},
+				},
+			},
+			{
+				Name: "emails",
+				Type: schema.ComplexType,
+				SubAttributes: []*schema.Attribute{
+					{Name: "display", Type: schema.StringType},
+					{Name: "primary", Type: schema.BooleanType},
+					{Name: "type", Type: schema.StringType},
+					{Name: "value", Type: schema.StringType},
+				},
+				MultiValued: true,
+			},
+		},
+	}
 
 	f := New(s).
 		EmptyChance(1).
