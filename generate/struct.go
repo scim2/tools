@@ -95,11 +95,11 @@ func (g *StructGenerator) CustomTypes(types []CustomType) *StructGenerator {
 
 // Generate creates a buffer with a go representation of the resource described in the given schema.
 func (g *StructGenerator) Generate() *bytes.Buffer {
-	g.generateStruct(g.s.Name, g.s.Description, g.s.Attributes)
+	g.generateStruct(g.s.Name, g.s.Description, g.s.Attributes, false)
 	return g.w.writer.(*bytes.Buffer)
 }
 
-func (g *StructGenerator) generateStruct(name, desc string, attrs []*schema.Attribute) {
+func (g *StructGenerator) generateStruct(name, desc string, attrs []*schema.Attribute, extension bool) {
 	w := g.w
 
 	name = keepAlpha(name) // remove all non alpha characters
@@ -114,7 +114,7 @@ func (g *StructGenerator) generateStruct(name, desc string, attrs []*schema.Attr
 	}
 
 	w.lnf("type %s struct {", name)
-	g.generateStructFields(name, attrs)
+	g.generateStructFields(name, attrs, extension)
 	w.ln("}")
 
 	for _, attr := range attrs {
@@ -125,12 +125,19 @@ func (g *StructGenerator) generateStruct(name, desc string, attrs []*schema.Attr
 				typ = singular(typ)
 			}
 			w.n()
-			g.generateStruct(name+typ, attr.Description, attr.SubAttributes)
+			g.generateStruct(name+typ, attr.Description, attr.SubAttributes, extension)
+		}
+	}
+
+	if !extension {
+		for _, e := range g.e {
+			g.w.n()
+			g.generateStruct(e.Name+"Extension", e.Description, e.Attributes, true)
 		}
 	}
 }
 
-func (g *StructGenerator) generateStructFields(name string, attrs []*schema.Attribute) {
+func (g *StructGenerator) generateStructFields(name string, attrs []*schema.Attribute, extension bool) {
 	w := g.w
 
 	name = keepAlpha(name) // remove all non alpha characters
@@ -199,24 +206,26 @@ func (g *StructGenerator) generateStructFields(name string, attrs []*schema.Attr
 		}
 	}
 
-	// extensions
-	if len(g.e) != 0 {
-		w.n()
-	}
-
-	var indentE int
-	for _, e := range g.e {
-		if l := len(cap(keepAlpha(e.Name))); l > indentE {
-			indentE = l
+	if !extension {
+		// extensions
+		if len(g.e) != 0 {
+			w.n()
 		}
-	}
-	for _, e := range g.e {
-		name := cap(keepAlpha(e.Name))
-		w.in(4).w(name)
-		w.sp(indentE - len(name) + 1)
-		typ := name + "Extension"
-		w.w(typ)
-		w.sp(indentE - len(typ) + 9)
-		w.lnf(" `scim:%q`", e.ID)
+
+		var indentE int
+		for _, e := range g.e {
+			if l := len(cap(keepAlpha(e.Name))); l > indentE {
+				indentE = l
+			}
+		}
+		for _, e := range g.e {
+			name := cap(keepAlpha(e.Name))
+			w.in(4).w(name)
+			w.sp(indentE - len(name) + 1)
+			typ := name + "Extension"
+			w.w(typ)
+			w.sp(indentE - len(typ) + 9)
+			w.lnf(" `scim:%q`", e.ID)
+		}
 	}
 }

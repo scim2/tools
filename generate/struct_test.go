@@ -134,5 +134,11 @@ func ExampleStructGenerator_Generate_extensions() {
 	//     ExternalID string
 	//     ID         string
 	//     UserName   string
+	//
+	//     EnterpriseUser EnterpriseUserExtension `scim:"urn:ietf:params:scim:schemas:extension:enterprise:2.0:User"`
+	// }
+	//
+	// type EnterpriseUserExtension struct {
+	//     EmployeeNumber string
 	// }
 }
