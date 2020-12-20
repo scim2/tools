@@ -29,7 +29,7 @@ func cap(s string) string {
 	if s == "id" {
 		return "ID"
 	}
-	if strings.HasSuffix(s, "d") {
+	if strings.HasSuffix(s, "Id") {
 		s = s[:len(s)-1] + "D"
 	}
 	return strings.Replace(strings.Title(s), " ", "", -1)
