@@ -25,6 +25,30 @@ func ExampleUnmarshal() {
 	// {Quint}
 }
 
+func ExampleUnmarshal_extension() {
+	type EnterpriseUserExtension struct {
+		EmployeeNumber string
+	}
+
+	type User struct {
+		UserName       string
+		EnterpriseUser EnterpriseUserExtension `scim:"urn:ietf:params:scim:schemas:extension:enterprise:2.0:User"`
+	}
+
+	var user User
+	_ = Unmarshal(map[string]interface{}{
+		"userName": "di-wu",
+		"urn:ietf:params:scim:schemas:extension:enterprise:2.0:User": map[string]interface{}{
+			"employeeNumber": "0001",
+		},
+	}, &user)
+	fmt.Println(user)
+
+	// Output:
+	// {di-wu {0001}}
+
+}
+
 type testUnmarshal struct {
 	Name string
 	Nil  interface{}
@@ -135,8 +159,8 @@ func Example() {
 	resourceMap := map[string]interface{}{
 		"userName": "di-wu",
 		"name": map[string]interface{}{
-			"firstName": "Quint",
-			"lastName":  "Daenen",
+			"givenName":  "Quint",
+			"familyName": "Daenen",
 		},
 	}
 

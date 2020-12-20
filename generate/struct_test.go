@@ -106,3 +106,33 @@ func ExampleStructGenerator_Generate_minimal() {
 	//     UserName   string
 	// }
 }
+
+func ExampleStructGenerator_Generate_extensions() {
+	g, _ := generate.NewStructGenerator(
+		schema.ReferenceSchema{
+			Name: "User",
+			Attributes: []*schema.Attribute{
+				{
+					Name:       "userName",
+					Required:   true,
+					Uniqueness: schema.Server,
+				},
+			},
+		},
+		schema.ReferenceSchema{
+			ID:   "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User",
+			Name: "Enterprise User",
+			Attributes: []*schema.Attribute{
+				{Name: "employeeNumber"},
+			},
+		},
+	)
+	fmt.Print(g.Generate())
+
+	// Output:
+	// type User struct {
+	//     ExternalID string
+	//     ID         string
+	//     UserName   string
+	// }
+}

@@ -36,9 +36,9 @@ func Unmarshal(data map[string]interface{}, value interface{}) error {
 	}
 
 	for i := 0; i < t.NumField(); i++ {
+		tag := parseTags(t.Field(i))
 		if v := v.Field(i); v.CanAddr() && v.CanSet() {
-			f := t.Field(i)
-			name := lowerFirstRune(f.Name)
+			name := lowerFirstRune(tag.name)
 			if fV, ok := data[name]; ok {
 				if fV == nil {
 					continue

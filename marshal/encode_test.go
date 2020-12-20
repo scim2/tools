@@ -11,15 +11,15 @@ func TestComplex(t *testing.T) {
 	}
 
 	type complex struct {
-		Bool    bool                   `scim:"complex.bool"`
-		Int     int                    `scim:"complex.int"`
-		Array   [2]interface{}         `scim:"complex.array"`
-		Map     map[string]interface{} `scim:"complex.map"`
-		Ptr     *string                `scim:"complex.ptr"`
-		Slice   []interface{}          `scim:"complex.slice"`
-		String  string                 `scim:"complex.string"`
-		Struct  structPtrString        `scim:"complex.struct"`
-		Structs []structPtrString      `scim:"complex.generate"`
+		Bool    bool                   `scim:"complex/bool"`
+		Int     int                    `scim:"complex/int"`
+		Array   [2]interface{}         `scim:"complex/array"`
+		Map     map[string]interface{} `scim:"complex/map"`
+		Ptr     *string                `scim:"complex/ptr"`
+		Slice   []interface{}          `scim:"complex/slice"`
+		String  string                 `scim:"complex/string"`
+		Struct  structPtrString        `scim:"complex/struct"`
+		Structs []structPtrString      `scim:"complex/generate"`
 	}
 
 	str := "_"
@@ -86,15 +86,15 @@ func TestComplexMultiValued(t *testing.T) {
 	}
 
 	type simple struct {
-		Bool    bool                   `scim:"complexMV.bool,mV,_mV"`
-		Int     int                    `scim:"complexMV1.int,mV"`
-		Array   [2]interface{}         `scim:"complexMV2.array,mV"`
-		Map     map[string]interface{} `scim:"complexMV3.map,mV"`
-		Ptr     *string                `scim:"complex.ptr,_mV"`
-		Slice   []interface{}          `scim:"complexMV5.slice,mV,_mV"`
-		String  string                 `scim:"complex.string,_mV"`
-		Struct  structPtrString        `scim:"complex.struct,_mV"`
-		Structs []structPtrString      `scim:"complexMV8.generate,mV,_mV"`
+		Bool    bool                   `scim:"complexMV/bool,mV,_mV"`
+		Int     int                    `scim:"complexMV1/int,mV"`
+		Array   [2]interface{}         `scim:"complexMV2/array,mV"`
+		Map     map[string]interface{} `scim:"complexMV3/map,mV"`
+		Ptr     *string                `scim:"complex/ptr,_mV"`
+		Slice   []interface{}          `scim:"complexMV5/slice,mV,_mV"`
+		String  string                 `scim:"complex/string,_mV"`
+		Struct  structPtrString        `scim:"complex/struct,_mV"`
+		Structs []structPtrString      `scim:"complexMV8/generate,mV,_mV"`
 	}
 
 	str := "_"

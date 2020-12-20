@@ -23,7 +23,7 @@ func parseTags(field reflect.StructField) tag {
 	if scimTag == "" {
 		t.name = lowerFirstRune(field.Name)
 	} else {
-		parts := strings.Split(tags[0], ".")
+		parts := strings.Split(tags[0], "/")
 		if parts[0] != "" {
 			t.name = parts[0]
 		} else {

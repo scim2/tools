@@ -13,6 +13,7 @@ import (
 type StructGenerator struct {
 	w *genWriter
 	s schema.ReferenceSchema
+	e []schema.ReferenceSchema
 
 	ptr         bool
 	addTags     func(a *schema.Attribute) map[string]string
@@ -25,9 +26,18 @@ type CustomType struct {
 	TypeName  string // name of the custom type
 }
 
-func NewStructGenerator(s schema.ReferenceSchema) (StructGenerator, error) {
+func NewStructGenerator(s schema.ReferenceSchema, extensions ...schema.ReferenceSchema) (StructGenerator, error) {
 	if s.Name == "" {
 		return StructGenerator{}, errors.New("schema does not have a name")
+	}
+
+	for _, extension := range extensions {
+		if extension.ID == "" || extension.Name == "" {
+			return StructGenerator{}, errors.New("extension does not have a name/id")
+		}
+		sort.SliceStable(extension.Attributes, func(i, j int) bool {
+			return strings.ToLower(extension.Attributes[i].Name) < strings.ToLower(extension.Attributes[j].Name)
+		})
 	}
 
 	// check if id an externalId is present, add if not
@@ -54,6 +64,7 @@ func NewStructGenerator(s schema.ReferenceSchema) (StructGenerator, error) {
 	return StructGenerator{
 		w:           newGenWriter(&bytes.Buffer{}),
 		s:           s,
+		e:           extensions,
 		customTypes: map[string]CustomType{},
 	}, nil
 }
@@ -186,5 +197,26 @@ func (g *StructGenerator) generateStructFields(name string, attrs []*schema.Attr
 		} else {
 			w.ln(typ)
 		}
+	}
+
+	// extensions
+	if len(g.e) != 0 {
+		w.n()
+	}
+
+	var indentE int
+	for _, e := range g.e {
+		if l := len(cap(keepAlpha(e.Name))); l > indentE {
+			indentE = l
+		}
+	}
+	for _, e := range g.e {
+		name := cap(keepAlpha(e.Name))
+		w.in(4).w(name)
+		w.sp(indentE - len(name) + 1)
+		typ := name + "Extension"
+		w.w(typ)
+		w.sp(indentE - len(typ) + 9)
+		w.lnf(" `scim:%q`", e.ID)
 	}
 }
