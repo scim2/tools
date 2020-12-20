@@ -1,2 +1,2 @@
-github.com/scim2/tools/attributes v0.0.0-20201104125017-3916db57772e h1:nWCOjmj6AlqmTLGmf83d8eW66tg1ENGK1hwr+KbVp7A=
-github.com/scim2/tools/attributes v0.0.0-20201104125017-3916db57772e/go.mod h1:HirRtL4gFwnZAjZbyg33fA0/YAZKyExiTR6ewHhMs9A=
+github.com/scim2/tools/attributes v1.0.0 h1:OGdxnOnay9vSuZhsQB4BFJDXDmo4X8lDg4q++cEIiKg=
+github.com/scim2/tools/attributes v1.0.0/go.mod h1:HirRtL4gFwnZAjZbyg33fA0/YAZKyExiTR6ewHhMs9A=
