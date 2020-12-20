@@ -1,2 +1,2 @@
-github.com/scim2/tools/schema v0.0.0-20201003164346-398b501f3863 h1:UNKPErLZ4u4g5xrnl+ooaEC5EFtRJyEBLaLvVkSe2A0=
-github.com/scim2/tools/schema v0.0.0-20201003164346-398b501f3863/go.mod h1:40hRS0VkXo6o+PusU1B78y/RthyJhRPnjmPpLcF/6as=
+github.com/scim2/tools/schema v1.0.0 h1:BAz6Sj2dzWPyI4CVE/Qg/lHFJw0fthVERcl+aozHRlE=
+github.com/scim2/tools/schema v1.0.0/go.mod h1:40hRS0VkXo6o+PusU1B78y/RthyJhRPnjmPpLcF/6as=
