@@ -39,8 +39,8 @@ func ExampleStructGenerator_AddTags() {
 	// Output:
 	// // User Account
 	// type User struct {
-	//     ExternalId string
-	//     Id         string `x:"required,unique"`
+	//     ExternalID string
+	//     ID         string `x:"required,unique"`
 	// }
 }
 
@@ -65,8 +65,8 @@ func ExampleStructGenerator_CustomTypes() {
 
 	// Output:
 	// type User struct {
-	//     ExternalId string
-	//     Id         uuid.UUID
+	//     ExternalID string
+	//     ID         uuid.UUID
 	//     Meta       Meta
 	// }
 }
@@ -81,8 +81,8 @@ func ExampleStructGenerator_Generate_empty() {
 	// Output:
 	// // User Account
 	// type User struct {
-	//     ExternalId string
-	//     Id         string
+	//     ExternalID string
+	//     ID         string
 	// }
 }
 
@@ -101,8 +101,8 @@ func ExampleStructGenerator_Generate_minimal() {
 
 	// Output:
 	// type User struct {
-	//     ExternalId string
-	//     Id         string
+	//     ExternalID string
+	//     ID         string
 	//     UserName   string
 	// }
 }

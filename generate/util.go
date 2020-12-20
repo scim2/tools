@@ -26,6 +26,12 @@ func singular(s string) string {
 
 // cap capitalizes every word and removes the spaces.
 func cap(s string) string {
+	if s == "id" {
+		return "ID"
+	}
+	if strings.HasSuffix(s, "d") {
+		s = s[:len(s)-1] + "D"
+	}
 	return strings.Replace(strings.Title(s), " ", "", -1)
 }
 
