@@ -1,4 +1,4 @@
 github.com/google/gofuzz v1.2.0 h1:xRy4A+RhZaiKjJ1bPfwQ8sedCA+YS2YcCHW6ec7JMi0=
 github.com/google/gofuzz v1.2.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
-github.com/scim2/tools/schema v0.0.0-20201003104258-0e42ee35c863 h1:beQjKXpuYcBw+xKsnxE9iM8zn6OiDhZyyQb9VOPBsBQ=
-github.com/scim2/tools/schema v0.0.0-20201003104258-0e42ee35c863/go.mod h1:40hRS0VkXo6o+PusU1B78y/RthyJhRPnjmPpLcF/6as=
+github.com/scim2/tools/schema v1.0.0 h1:BAz6Sj2dzWPyI4CVE/Qg/lHFJw0fthVERcl+aozHRlE=
+github.com/scim2/tools/schema v1.0.0/go.mod h1:40hRS0VkXo6o+PusU1B78y/RthyJhRPnjmPpLcF/6as=
