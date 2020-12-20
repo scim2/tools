@@ -71,6 +71,45 @@ func TestUnmarshal(t *testing.T) {
 	}
 }
 
+type ResourceAttributes map[string]interface{}
+type Attributes []interface{}
+type String string
+
+func TestUnmarshal_TypeAliases(t *testing.T) {
+	s := ResourceAttributes{
+		"name": String("Quint"),
+		"nil":  nil,
+		"last": ResourceAttributes{
+			"name": String("Daenen"),
+		},
+		"nickNames": Attributes{
+			ResourceAttributes{
+				"name": String("quint"),
+			},
+			ResourceAttributes{
+				"name": String("di-wu"),
+			},
+		},
+	}
+
+	var r testUnmarshal
+	if err := Unmarshal(s, &r); err != nil {
+		t.Error(err)
+	}
+	if r.Name != "Quint" {
+		t.Error()
+	}
+	if r.Last.Name != "Daenen" {
+		t.Error()
+	}
+	if r.NickNames[0].Name != "quint" {
+		t.Error()
+	}
+	if r.NickNames[1].Name != "di-wu" {
+		t.Error()
+	}
+}
+
 func Example() {
 	type Name struct {
 		FirstName string `scim:"givenName"`
